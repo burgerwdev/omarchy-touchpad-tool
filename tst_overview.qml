@@ -241,7 +241,7 @@ TestCase {
     Component { id: wallpaperComponent; PreparedWallpaper { width: 1100; height: 850 } }
     function test_prepared_wallpaper_first_frame_and_reopen() {
         const wallpaper = createTemporaryObject(wallpaperComponent, test, {
-            source: Qt.resolvedUrl("assets/screenshots/trackpad-controls.png"), requested: true
+            source: Qt.resolvedUrl("assets/screenshots/upstream/trackpad-controls.png"), requested: true
         });
         const statusAtConstruction = wallpaper.imageStatus;
         if (statusAtConstruction !== Image.Ready) verify(!wallpaper.presentable);
@@ -268,7 +268,7 @@ TestCase {
         compare(wallpaper.presentable, false);
         tryCompare(wallpaper, "fallbackLatched", true);
         const fallback = grabImage(wallpaper).pixel(20, 600);
-        wallpaper.source = Qt.resolvedUrl("assets/screenshots/trackpad-controls.png");
+        wallpaper.source = Qt.resolvedUrl("assets/screenshots/upstream/trackpad-controls.png");
         wallpaper.resolving = false;
         tryCompare(wallpaper, "ready", true);
         compare(grabImage(wallpaper).pixel(20, 600), fallback);

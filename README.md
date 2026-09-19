@@ -17,6 +17,14 @@ settings validate, apply and roll back the same way.
 
 Not an official Omarchy project and not endorsed by the Omarchy team.
 
+<table>
+  <tr><th>Trackpad</th><th>TrackPoint</th></tr>
+  <tr>
+    <td valign="top"><img src="assets/screenshots/trackpad-tab.png" alt="Trackpad tab: device row, Pointer/Scrolling/Gestures tabs and the other-tools section" width="300"></td>
+    <td valign="top"><img src="assets/screenshots/trackpoint-tab.png" alt="TrackPoint tab: sensitivity slider, bar icon choice and middle-button actions" width="300"></td>
+  </tr>
+</table>
+
 ## Tabs
 
 The bar icon opens the panel. The top level is one tab per device kind found on
