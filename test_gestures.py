@@ -389,13 +389,13 @@ class GestureTests(unittest.TestCase):
         self.assertEqual(g.INPUT.read_text(), INPUT)
 
     def test_schema_four_literal_read_migrate_and_restore(self):
-        fixture = r'''-- BEGIN Trackpad Plus gestures
+        fixture = r'''-- BEGIN local.touchpad-tool gestures
 -- {"original": "hl.gesture({ fingers = 3, direction = \"horizontal\", action = \"workspace\" })\n", "separator": "", "settings": {"distance": 300, "enabled": true, "fingers": 3, "invert": false, "overview": true, "overview_provider": "trackpad-plus"}, "version": 4}
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
-hl.gesture({ fingers = 3, direction = "up", action = function() hl.exec_cmd("python3 -B \"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/davefano.trackpad-plus/overview-control.py\" open") end })
-hl.gesture({ fingers = 3, direction = "down", action = function() hl.exec_cmd("python3 -B \"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/davefano.trackpad-plus/overview-control.py\" close") end })
+hl.gesture({ fingers = 3, direction = "up", action = function() hl.exec_cmd("python3 -B \"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/local.touchpad-tool/overview-control.py\" open") end })
+hl.gesture({ fingers = 3, direction = "down", action = function() hl.exec_cmd("python3 -B \"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/local.touchpad-tool/overview-control.py\" close") end })
 hl.config({ gestures = { workspace_swipe_distance = 300, workspace_swipe_invert = false } })
--- END Trackpad Plus gestures
+-- END local.touchpad-tool gestures
 '''
         historical = INPUT.replace(BINDING + '\n', g.ANCHOR) + fixture
         for mode in ('restore', 'migrate', 'failed-migration'):
@@ -418,13 +418,13 @@ hl.config({ gestures = { workspace_swipe_distance = 300, workspace_swipe_invert 
             self.assertEqual(g.INPUT.read_text(), INPUT)
 
     def test_schema_five_literal_preserved_until_explicit_edit(self):
-        fixture = r'''-- BEGIN Trackpad Plus gestures
+        fixture = r'''-- BEGIN local.touchpad-tool gestures
 -- {"original": "", "separator": "", "settings": {"distance": 300, "enabled": true, "fingers": 3, "invert": false, "overview": true, "overview_provider": "trackpad-plus"}, "version": 5}
 hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
-hl.gesture({ fingers = 3, direction = "up", action = { start = function() hl.exec_cmd("python3 -B \"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/davefano.trackpad-plus/overview-control.py\" start") end, finish = function(event) if not event.cancelled then hl.exec_cmd("python3 -B \"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/davefano.trackpad-plus/overview-control.py\" open") end end } })
-hl.gesture({ fingers = 3, direction = "down", action = { finish = function(event) if not event.cancelled then hl.exec_cmd("python3 -B \"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/davefano.trackpad-plus/overview-control.py\" close") end end } })
+hl.gesture({ fingers = 3, direction = "up", action = { start = function() hl.exec_cmd("python3 -B \"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/local.touchpad-tool/overview-control.py\" start") end, finish = function(event) if not event.cancelled then hl.exec_cmd("python3 -B \"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/local.touchpad-tool/overview-control.py\" open") end end } })
+hl.gesture({ fingers = 3, direction = "down", action = { finish = function(event) if not event.cancelled then hl.exec_cmd("python3 -B \"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/local.touchpad-tool/overview-control.py\" close") end end } })
 hl.config({ gestures = { workspace_swipe_distance = 300, workspace_swipe_invert = false } })
--- END Trackpad Plus gestures
+-- END local.touchpad-tool gestures
 '''
         g.INPUT.write_text(fixture)
         settings = g.parse(fixture)[2]
@@ -445,7 +445,7 @@ hl.config({ gestures = { workspace_swipe_distance = 300, workspace_swipe_invert 
         source = g.COMPANION_COMMAND + 'open'
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary) / 'config with $(touch SHOULD_NOT_EXIST) spaces'
-            script = base / 'omarchy/plugins/davefano.trackpad-plus/overview-control.py'
+            script = base / 'omarchy/plugins/local.touchpad-tool/overview-control.py'
             script.parent.mkdir(parents=True)
             script.write_text('import sys; print(sys.argv[1])')
             import os
@@ -481,7 +481,7 @@ hl.config({ gestures = { workspace_swipe_distance = 300, workspace_swipe_invert 
         self.assertEqual(g.INPUT.read_text(), INPUT)
 
     def test_schema_six_preserves_bytes_until_explicit_edit(self):
-        fixture = '-- BEGIN Trackpad Plus gestures\n-- {"original": "", "separator": "", "settings": {"distance": 300, "enabled": true, "fingers": 3, "invert": false, "overview": true, "overview_provider": "trackpad-plus"}, "version": 6}\nhl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })\nhl.gesture({ fingers = 3, direction = "up", action = { start = function() hl.exec_cmd("python3 -B \\"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/davefano.trackpad-plus/overview-control.py\\" open") end } })\nhl.gesture({ fingers = 3, direction = "down", action = { finish = function(event) if not event.cancelled then hl.exec_cmd("python3 -B \\"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/davefano.trackpad-plus/overview-control.py\\" close") end end } })\nhl.config({ gestures = { workspace_swipe_distance = 300, workspace_swipe_invert = false } })\n-- END Trackpad Plus gestures\n'
+        fixture = '-- BEGIN local.touchpad-tool gestures\n-- {"original": "", "separator": "", "settings": {"distance": 300, "enabled": true, "fingers": 3, "invert": false, "overview": true, "overview_provider": "trackpad-plus"}, "version": 6}\nhl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })\nhl.gesture({ fingers = 3, direction = "up", action = { start = function() hl.exec_cmd("python3 -B \\"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/local.touchpad-tool/overview-control.py\\" open") end } })\nhl.gesture({ fingers = 3, direction = "down", action = { finish = function(event) if not event.cancelled then hl.exec_cmd("python3 -B \\"${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/local.touchpad-tool/overview-control.py\\" close") end end } })\nhl.config({ gestures = { workspace_swipe_distance = 300, workspace_swipe_invert = false } })\n-- END local.touchpad-tool gestures\n'
         g.INPUT.write_text(fixture)
         parsed = g.parse(fixture)
         self.assertEqual(g.block(parsed[2], parsed[3], version=6), fixture)

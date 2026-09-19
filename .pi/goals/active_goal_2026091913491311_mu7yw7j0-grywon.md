@@ -5,14 +5,14 @@
   "status": "active",
   "autoContinue": true,
   "usage": {
-    "tokensUsed": 502175,
-    "activeSeconds": 910
+    "tokensUsed": 589953,
+    "activeSeconds": 1249
   },
   "sisyphus": false,
   "createdAt": "2026-09-19T05:49:13.116Z",
-  "updatedAt": "2026-09-19T14:47:38.224Z",
+  "updatedAt": "2026-09-19T14:53:38.183Z",
   "activePath": ".pi/goals/active_goal_2026091913491311_mu7yw7j0-grywon.md",
-  "revision": 152,
+  "revision": 179,
   "scheduler": {
     "version": 1,
     "owner": "01a0b829-6efd-71a3-b081-9dd79a47df0b",
@@ -60,8 +60,10 @@
       {
         "id": "task-4",
         "title": "Port the Trackpad feature set into the Trackpad tab",
-        "status": "pending",
-        "verificationContract": "Pointer (curve editor, profiles, tap/typing/two-finger), Scrolling and Gestures work end to end; gesture preview and overview provider function; ported python and QML tests pass."
+        "status": "complete",
+        "verificationContract": "Pointer (curve editor, profiles, tap/typing/two-finger), Scrolling and Gestures work end to end; gesture preview and overview provider function; ported python and QML tests pass.",
+        "completedAt": "2026-09-19T14:47:44.421Z",
+        "evidence": "TrackpadPanel.qml converted to a tab body and loaded by Panel.qml through the device Loader; qmllint clean (only allowlisted host-metadata diagnostics); test-selection.js passes against the real QML f"
       },
       {
         "id": "task-5",
@@ -112,15 +114,15 @@ If blocked: stop and ask the user.
 - Status: running
 - Auto-continue: on
 - Sisyphus mode: no
-- Time spent: 15m10s
-- Tokens used: 502K (502,175) tokens
+- Time spent: 20m49s
+- Tokens used: 590K (589,953) tokens
 ## Tasks
 
 <!-- blockCompletion: false -->
 - [x] task-1: Scaffold merged repo and plugin shell — evidence: omarchy plugin validate exit 0; plugin list shows local.touchpad-tool discovered+enabled; shell log "Local plugin changed, reloading: local.touchpad-tool" with no QML errors; qs ipc call local.touchpa
 - [x] task-2: Device autodetection and Trackpad/TrackPoint tab shell — evidence: devices.py parses hyprctl once (test_hyprctl_output_is_read_once) and outputs tabs/default_tab; live output: touchpads [synaptics-tm3381-002], trackpoints [tpps/2-elan-trackpoint], tabs [trackpad,trac
 - [x] task-3: Unified Hyprland config writer on the generated-lua path — evidence: Live: trackpads.py state/init wrote state JSON + zz-local-touchpads.lua only, hyprctl configerrors empty, input.lua md5 unchanged (45ffc437...) across state/set/clear; control.py read 0.35 -> set 0.25
-- [ ] task-4: Port the Trackpad feature set into the Trackpad tab — contract: Pointer (curve editor, profiles, tap/typing/two-finger), Scrolling and Gestures work end to end; gesture preview and overview provider function; ported python and QML tests pass.
+- [x] task-4: Port the Trackpad feature set into the Trackpad tab — evidence: TrackpadPanel.qml converted to a tab body and loaded by Panel.qml through the device Loader; qmllint clean (only allowlisted host-metadata diagnostics); test-selection.js passes against the real QML f
 - [ ] task-5: Port the TrackPoint feature set into the TrackPoint tab — contract: Sensitivity slider writes and reads back the TrackPoint value; middle-button taps, holds, flicks, modifier combos and per-app profiles generate and remove the bindings block correctly; bar-icon options work; ported tests pass.
 - [ ] task-6: Reconcile duplicated functionality and delete dead paths — contract: grep shows one implementation each for sensitivity, scroll and tap settings, one writer and one reload path; retired input.lua editing code and markers are gone or migrated; no duplicated helpers remain between the two backends.
 - [ ] task-7: Conflict detection, backup, disable and settings import flow — contract: With davefano.trackpad-plus installed the panel detects it and offers backup + disable + import; the consent path performs a timestamped backup before disabling; declining changes nothing; uninstall is only instructed, never executed; existing touchpad and trackpoint values appear after import.

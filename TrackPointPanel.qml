@@ -1,29 +1,36 @@
+pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 import Quickshell.Io
 import qs.Ui
 import qs.Commons
 
-Panel {
+// TrackPoint controls: the body of the TrackPoint tab. The merged panel owns the
+// bar icon and the popup, so the icon choice here asks the panel to change its own
+// bar entry, and the panel routes open state, keys and popup sizing into this body.
+Item {
   id: root
-  moduleName: "io.github.artmoreno.trackpoint"
-  ipcTarget: "io.github.artmoreno.trackpoint"
+  property var bar: null
+  property bool panelOpen: false
+  property var keyCatcher: null
+  property string logo: "wordmark"
+  signal closeRequested()
+  signal switchPanelRequested(int direction)
+  signal logoRequested(string value)
   property real sensitivity: 0
   property string device: ""
   property string status: ""
   property bool queued: false
-  // Bar icon, set per widget with: omarchy bar set io.github.artmoreno.trackpoint logo <wordmark|dot|color>
-  readonly property string logo: ["wordmark", "dot", "color"].indexOf(String(setting("logo", "wordmark"))) !== -1
-    ? String(setting("logo", "wordmark")) : "wordmark"
+  // Helpers sit next to this file whether it runs from the repo or from the
+  // installed plugin directory.
+  readonly property string helper: decodeURIComponent(String(Qt.resolvedUrl("control.py")).replace(/^file:\/\//, ""))
+  // Middle button (the one between the two hard buttons) bound through hypr/bindings.lua
+  readonly property string middleHelper: decodeURIComponent(String(Qt.resolvedUrl("middle.py")).replace(/^file:\/\//, ""))
   readonly property var logoOptions: [
     { value: "wordmark", label: "ThinkPad" },
     { value: "dot", label: "Red dot" },
     { value: "color", label: "Color logo" }
   ]
-  readonly property string pluginDir: Quickshell.env("HOME") + "/.config/omarchy/plugins/io.github.artmoreno.trackpoint"
-  readonly property string helper: pluginDir + "/control.py"
-  // Middle button (the one between the two hard buttons) bound through hypr/bindings.lua
-  readonly property string middleHelper: pluginDir + "/middle.py"
   property bool middleEnabled: false
   property var middleProfiles: ({ "default": {} })
   property string middleProfile: "default"
@@ -116,8 +123,13 @@ Panel {
     options.push({ value: "__add", label: "Add focused app…" })
     return options
   }
-  implicitWidth: button.implicitWidth
-  implicitHeight: button.implicitHeight
+  readonly property real contentWidth: Style.space(360)
+  readonly property real contentHeight: content.implicitHeight
+  implicitHeight: root.contentHeight
+
+  // Arrow keys nudge the sensitivity, as in the original panel.
+  function moveCursor(dx) { if (dx !== 0) root.setSensitivity(root.sensitivity + dx * 0.05) }
+  function togglePrimary() {}
 
   function refresh() {
     if (!reader.running && !writer.running) reader.running = true
@@ -154,17 +166,11 @@ Panel {
     writer.running = true
   }
   Component.onCompleted: refresh()
-  onOpenedChanged: {
-    if (!opened) return
+  onPanelOpenChanged: {
+    if (!panelOpen) return
     refresh()
-    // Start with every list folded so they don't cover each other
-    Qt.callLater(function() {
-      profileDropdown.close()
-      for (var i = 0; i < slotRepeater.count; i++) {
-        var slotItem = slotRepeater.itemAt(i)
-        if (slotItem) slotItem.closeDropdown()
-      }
-    })
+    // Start with the profile list folded so it doesn't cover the actions.
+    Qt.callLater(function() { profileDropdown.close() })
   }
 
   Process {
@@ -227,95 +233,16 @@ Panel {
     }
   }
 
-  Process {
-    id: logoWriter
-    onExited: function(exitCode, exitStatus) {
-      if (exitCode !== 0) root.status = "Could not change the bar icon."
-    }
-  }
   function setLogo(value) {
-    if (logoWriter.running || value === logo) return
-    // Omarchy's own command stores it on this widget's bar entry, which updates the icon live
-    logoWriter.command = ["omarchy", "bar", "set", "io.github.artmoreno.trackpoint", "logo", value]
-    logoWriter.running = true
+    if (value === logo) return
+    // The merged panel owns this widget's bar entry, so it performs the change.
+    root.logoRequested(value)
   }
 
-  TextMetrics {
-    id: logoMetrics
-    text: "ThinkPad"
-    font.family: "Liberation Sans"
-    font.pixelSize: Style.bar.iconFont
-    font.bold: true
-    font.italic: true
-  }
-
-  BarIconButton {
-    id: button
-    anchors.fill: parent
-    bar: root.bar
-    tooltipText: root.device ? "TrackPoint · " + root.device : "TrackPoint"
-    // The wordmark and color logo are wider than the square icon slot.
-    fixedWidth: vertical || root.logo === "dot" ? -1
-      : root.logo === "color" ? colorLogoWidth + Style.space(12)
-      : Math.ceil(logoMetrics.advanceWidth) + Style.space(12)
-    readonly property int colorLogoHeight: Math.round(Style.bar.iconFont * 1.15)
-    // thinkpad-color.svg is 768 x 274
-    readonly property int colorLogoWidth: Math.ceil(colorLogoHeight * 768 / 274)
-    iconComponent: Component {
-      Item {
-        Text {
-          anchors.centerIn: parent
-          visible: root.logo === "wordmark"
-          text: logoMetrics.text
-          color: "#e2231a"
-          font: logoMetrics.font
-        }
-        Rectangle {
-          anchors.centerIn: parent
-          visible: root.logo === "dot"
-          width: Math.round(Style.bar.iconFont * 0.8)
-          height: width
-          radius: width / 2
-          color: "#e2231a"
-        }
-        Image {
-          anchors.centerIn: parent
-          visible: root.logo === "color"
-          source: root.logo === "color" ? Qt.resolvedUrl("thinkpad-color.svg") : ""
-          width: button.colorLogoWidth
-          height: button.colorLogoHeight
-          sourceSize: Qt.size(width * 2, height * 2)
-          fillMode: Image.PreserveAspectFit
-          smooth: true
-        }
-      }
-    }
-    onPressed: function(b) { root.toggle() }
-  }
-
-  KeyboardPanel {
-    id: popup
-    anchorItem: button
-    owner: root
-    bar: root.bar
-    open: root.opened
-    focusTarget: keys
-    contentWidth: popup.fittedContentWidth(Style.space(360))
-    contentHeight: popup.fittedContentHeight(content.implicitHeight + padding * 2 + Style.space(8), Style.space(900))
-
-    PanelKeyCatcher {
-      id: keys
-      anchors.fill: parent
-      onMoveRequested: function(dx, dy) {
-        if (dx !== 0) root.setSensitivity(root.sensitivity + dx * 0.05)
-      }
-      onCloseRequested: root.close()
-      onTabRequested: function(direction) { root.switchPanel(direction) }
-
-      Column {
-        id: content
-        width: parent.width
-        spacing: Style.space(12)
+  Column {
+    id: content
+    width: parent.width
+    spacing: Style.space(12)
         Text {
           text: "TrackPoint"
           color: root.bar.foreground
@@ -514,6 +441,12 @@ Panel {
               onChoiceChanged: sync()
               onCommandChanged: { editingCustom = false; sync() }
               Component.onCompleted: sync()
+              // Each action row folds its own dropdown when the panel closes, so
+              // no stale menu is left covering the next panel.
+              Connections {
+                target: root
+                function onPanelOpenChanged() { if (!root.panelOpen) slotDropdown.close() }
+              }
 
               Item {
                 width: parent.width
@@ -557,7 +490,7 @@ Panel {
                   foreground: root.bar.foreground
                   verticalPadding: Style.space(4)
                   onAccepted: root.runMiddle(["set", root.middleProfile, slotRow.slot, text])
-                  Keys.onEscapePressed: root.close()
+                  Keys.onEscapePressed: root.closeRequested()
                 }
                 Button {
                   id: saveCustom
@@ -586,6 +519,4 @@ Panel {
           font.pixelSize: Style.font.caption
         }
       }
-    }
-  }
 }

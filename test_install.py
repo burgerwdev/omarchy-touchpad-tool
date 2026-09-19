@@ -112,7 +112,7 @@ else:
                 saved = gesture('state')
                 self.assertEqual(saved['settings']['fingers'], 4)
                 self.assertEqual(saved['settings']['distance'], 500)
-                self.assertIn('BEGIN Trackpad Plus gestures', target.read_text())
+                self.assertIn('BEGIN local.touchpad-tool gestures', target.read_text())
                 self.assertFalse(gesture('restore')['managed'])
                 self.assertEqual(target.read_text(), source)
                 self.assertEqual(os.readlink(link), link_text)

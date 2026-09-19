@@ -189,7 +189,7 @@ Panel {
     open: root.opened
     focusTarget: keyCatcher
     contentWidth: panel.fittedContentWidth(root.bodyWidth)
-    contentHeight: panel.fittedContentHeight(column.implicitHeight)
+    contentHeight: panel.fittedContentHeight(column.implicitHeight, Style.space(900))
 
     PanelKeyCatcher {
       id: keyCatcher
@@ -291,23 +291,14 @@ Panel {
 
         Component {
           id: trackPointBody
-          Column {
-            width: parent ? parent.width : 0
-            spacing: Style.space(8)
-            Text {
-              text: "TrackPoint"
-              color: root.bar.foreground
-              font.family: root.bar.fontFamily
-              font.pixelSize: Style.font.body
-            }
-            Text {
-              width: parent.width
-              text: root.trackpoints.length ? root.trackpoints.join(", ") : "No TrackPoint detected."
-              color: Qt.alpha(root.bar.foreground, 0.65)
-              wrapMode: Text.Wrap
-              font.family: root.bar.fontFamily
-              font.pixelSize: Style.font.caption
-            }
+          TrackPointPanel {
+            bar: root.bar
+            panelOpen: root.opened
+            keyCatcher: keyCatcher
+            logo: root.logo
+            onCloseRequested: root.close()
+            onSwitchPanelRequested: function(direction) { root.switchPanel(direction) }
+            onLogoRequested: function(value) { root.setLogo(value) }
           }
         }
 
