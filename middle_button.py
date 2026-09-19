@@ -26,8 +26,8 @@ state_dir = Path(os.environ.get('XDG_STATE_HOME') or Path.home() / '.local/state
 store = state_dir / 'middle.json'
 # Press timing state is per-user; never fall back to the shared /tmp
 runtime = Path(os.environ['XDG_RUNTIME_DIR']) if os.environ.get('XDG_RUNTIME_DIR') else state_dir
-press_state = runtime / 'io.github.artmoreno.trackpoint-press.json'
-tap_state = runtime / 'io.github.artmoreno.trackpoint-tap.json'
+press_state = runtime / 'local.touchpad-tool-press.json'
+tap_state = runtime / 'local.touchpad-tool-tap.json'
 
 
 def hyprctl_json(*args):

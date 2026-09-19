@@ -1,15 +1,47 @@
-# Developing Trackpad Plus
+# Developing Touchpad Tool
 
-Clone the independent repository and work outside the installed plugin:
+One plugin for the touchpad and the TrackPoint, merging omarchy-trackpad-plus
+(David Fano, itself a fork of Andrew Kent's omarchy-touchpad-widget) and
+omarchy-trackpoint (ArtMoreno). Work in this repository, and link it into the
+shell instead of copying files:
 
 ```sh
-git clone https://github.com/davefano/omarchy-trackpad-plus.git
-cd omarchy-trackpad-plus
+ln -sfn "$PWD" ~/.config/omarchy/plugins/local.touchpad-tool
+omarchy plugin enable local.touchpad-tool
 ```
 
 `main` is the maintained release line. Preserve original Git history and MIT
 notices. Contributions should describe the observable behavior and validation.
 Do not commit runtime settings, private configuration, caches, or backups.
+
+## Merged architecture
+
+The two tools now share one device-settings path, and each keeps its own UI
+inside one tab:
+
+- `Panel.qml` is the only bar widget: bar icon (wordmark, red dot or color
+  logo), the popup, keyboard routing, popup sizing, the device tab row, and the
+  conflict section. It loads one tab body at a time.
+- `TrackpadPanel.qml` / `TrackPointPanel.qml` are the tab bodies. They keep the
+  layout, controls and styling of the tools they came from, and expose
+  `contentWidth`, `contentHeight`, `moveCursor`, `togglePrimary` and the
+  `closeRequested` / `switchPanelRequested` signals to the shell.
+- `devices.py` classifies attached hardware and decides which tabs exist;
+  `DeviceTabs.js` maps that answer onto the tab row. The panel never parses
+  devices itself.
+- `trackpads.py` is the only writer for device settings: per-device state JSON
+  plus one generated Lua file, applied with `hyprctl eval` and rolled back when
+  Hyprland reports a problem. Devices are `kind`-tagged (`trackpad`,
+  `trackpoint`) and validated per kind. `session()` is the single way in:
+  lock, journal recovery, discovery, reconcile.
+- `control.py` (TrackPoint sensitivity) and `middle.py` (middle button) write
+  through that writer; `trackpoint.py` holds the shared TrackPoint name match.
+- `gestures.py` still owns gesture rules in the user's `input.lua`, with its own
+  backup and restore flow, and `overview-control.py` plus `overview/` remain the
+  overview provider.
+- `adopt.py` detects other plugins and legacy managed blocks, backs up every
+  file this plugin owns or edits, imports legacy settings, and can disable
+  another plugin. It never removes one.
 
 ## Release versions
 
@@ -113,7 +145,12 @@ Controls/Test, and Qt development tools (`qmllint`, `qmltestrunner`):
 
 ```sh
 python3 test_trackpads.py
+python3 test_trackpoints.py
+python3 test_middle.py
+python3 test_adopt.py
+python3 test_devices.py
 python3 test_gestures.py
+node test-devicetabs.js
 node test-selection.js
 node test-overview-model.js
 python3 test_overview_control.py
@@ -163,7 +200,7 @@ all companion dependencies are tracked and non-starting commands remain idle.
 
 Use the README's backup and migration procedure. For an unpublished checkout,
 copy the tracked runtime files and manifest into a new user plugin directory
-named `davefano.trackpad-plus`, validate it with `omarchy plugin validate`, and
+named `local.touchpad-tool`, validate it with `omarchy plugin validate`, and
 rescan with `omarchy-shell shell rescanPlugins`. Disable the previous widget
 before enabling this one. Never edit `/usr/share/omarchy`.
 
