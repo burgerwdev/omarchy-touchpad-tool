@@ -46,7 +46,7 @@ only). No unrelated warnings.
 | Touchpad pointer/scroll/tap | `trackpads.py state` and `set` wrote only `settings.json` + `zz-local-touchpads.lua`; `hyprctl configerrors` empty; rules carry `sensitivity = 0.35`, `scroll_factor = 0.4`, `natural_scroll = true`, `tap_to_click = true` |
 | TrackPoint sensitivity | `control.py` read `0.35`, wrote `0.25` → rule `hl.device({ name = "tpps/2-elan-trackpoint", sensitivity = 0.25 })`, read back `0.25`; restored afterwards |
 | Middle button | `middle.py enable` wrote the marked binds block (press/release and `SUPER + mouse:274`) and set `scroll_method = "no_scroll"` through the same writer; `disable` removed the block and the setting, leaving `bindings.lua` byte-identical to the pre-test copy |
-| Gestures | `gestures.py state` and `overview-status` return valid JSON; the overview companion path resolves inside the merged plugin directory |
+| Gestures | `gestures.py state` and `overview-status` return valid JSON; the overview companion path resolves inside the merged plugin directory. Applying live is refused here by design (`Gestures also exist in another Hyprland file; manage them there to avoid conflicts`) and `input.lua` was byte-identical afterwards, so the panel shows that state instead of writing |
 | Bar icon | `omarchy bar set local.touchpad-tool logo dot|wordmark` updates the widget entry in `shell.json` |
 | Config validity | `hyprctl configerrors` empty after every write above; `~/.config/hypr/input.lua` byte-identical (md5 `45ffc437279d411db2540cf803d73bf9`) throughout — no device settings are written there |
 
