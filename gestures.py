@@ -402,10 +402,7 @@ def check_environment():
 
 
 def reload_checked():
-    core.hypr('reload', 'config-only')
-    errors = core.hypr('configerrors').strip()
-    if errors:
-        raise RuntimeError('Hyprland rejected the gesture settings: ' + errors)
+    core.reload_checked('Hyprland rejected the gesture settings')
 
 
 def clear_journal():

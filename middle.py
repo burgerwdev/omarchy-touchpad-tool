@@ -49,9 +49,10 @@ usage = ('Usage: middle.py [enable | disable | set <profile> <slot> <command> | 
 
 
 def load():
+    raw = trackpads.read_state_file(store)
     try:
-        data = json.loads(store.read_text())
-    except FileNotFoundError:
+        data = json.loads(raw) if raw is not None else {}
+    except ValueError:
         data = {}
     profiles = {name: {slot: str(command) for slot, command in actions.items() if slot in SLOTS and command}
                 for name, actions in (data.get('profiles') or {}).items() if isinstance(actions, dict)}
@@ -62,8 +63,17 @@ def load():
 
 
 def save(state):
-    state_dir.mkdir(parents=True, exist_ok=True)
-    store.write_text(json.dumps(state, indent=2) + '\n')
+    # Middle-button settings live in the same hardened state path as device settings.
+    trackpads.atomic_write(store, json.dumps(state, indent=2) + '\n')
+
+
+def forget():
+    try:
+        with trackpads.state_directory(store.parent) as directory:
+            os.unlink(store.name, dir_fd=directory)
+            os.fsync(directory)
+    except FileNotFoundError:
+        pass
 
 
 def bind_block(state):
@@ -83,8 +93,7 @@ def bind_block(state):
 
 
 def reload():
-    subprocess.run(['hyprctl', 'reload', 'config-only'], capture_output=True, text=True, check=True)
-    return subprocess.run(['hyprctl', 'configerrors'], capture_output=True, text=True, check=True).stdout.strip()
+    trackpads.reload_checked()
 
 
 def write_binds(state):
@@ -94,9 +103,7 @@ def write_binds(state):
         return
     config.write_text(updated)
     try:
-        errors = reload()
-        if errors:
-            raise RuntimeError(errors)
+        reload()
     except Exception:
         # Hyprland keeps running on a broken config, so put the file back.
         config.write_text(text)
@@ -149,7 +156,7 @@ def disable(state):
 
 try:
     state = load()
-    previous_store = store.read_text() if store.exists() else None
+    previous_store = trackpads.read_state_file(store)
     result = {}
     args = sys.argv[1:]
     if args:
@@ -186,9 +193,9 @@ try:
             write_binds(state)
         except Exception:
             if previous_store is None:
-                store.unlink(missing_ok=True)
+                forget()
             else:
-                store.write_text(previous_store)
+                trackpads.atomic_write(store, previous_store)
             raise
 
     result['enabled'] = state['enabled']

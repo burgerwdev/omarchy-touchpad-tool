@@ -456,6 +456,18 @@ def validate_persisted(state):
             validate_native_curve(group['settings'].get('curve', DEFAULT_CURVE))
 
 
+def reload_checked(context='Hyprland rejected the settings'):
+    """Reload the user's config and fail when Hyprland reports a problem.
+
+    The gesture block writer and the middle-button binds use this too, so every
+    config change in the plugin is checked the same way.
+    """
+    hypr('reload', 'config-only')
+    errors = hypr('configerrors').strip()
+    if errors:
+        raise RuntimeError(f'{context}: {errors}')
+
+
 def save(state):
     validate_persisted(state)
     atomic_write(GENERATED, lua_for(state['devices']))

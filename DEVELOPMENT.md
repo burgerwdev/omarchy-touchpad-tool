@@ -73,9 +73,10 @@ This release identifier is separate from the backend's settings schema version.
   opening on readiness or a fixed fallback deadline. The foreground view is
   destroyed on close, releasing its capture sources. The application reads theme
   colors without importing the bar's QML components.
-- `Model.js`: numeric helpers and inherited legacy parsing utilities.
-- `touchpad-state` / `touchpad-sensitivity`: inherited legacy CLI helpers,
-  retained for compatibility; the current panel uses `trackpads.py` instead.
+- `Model.js`: numeric helpers and the human labels for the two sliders.
+- `devices.py`: one classifier for the touchpad and TrackPoint lists the panel
+  offers, including which tabs exist. `trackpoint.py` holds the TrackPoint name
+  match that the writer and the TrackPoint helpers share.
 
 Fresh `apple` settings groups include Magic Trackpad interfaces and the exact
 built-in names in `BUILTIN_APPLE` (Apple Silicon and Intel). Migration rekeys a
@@ -127,8 +128,6 @@ QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORMTHEME=basic QT_QUICK_BACKEND=software Q
   /usr/lib/qt6/bin/qmltestrunner -input tst_gestures.qml
 QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORMTHEME=basic QT_QUICK_BACKEND=software QT_QUICK_CONTROLS_STYLE=Basic \
   /usr/lib/qt6/bin/qmltestrunner -input tst_overview.qml
-perl -c touchpad-state
-bash -n touchpad-sensitivity
 git diff --check
 ```
 

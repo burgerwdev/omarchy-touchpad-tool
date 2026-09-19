@@ -341,11 +341,4 @@ function context() {
   assert.equal(ctx.keyboardNavigationBlocked(), true, 'curve editor keeps its existing focus behavior');
 }
 
-// Keep the inherited device parser usable for Intel Mac installations.
-{
-  const model = require('./Model.js');
-  for (const name of ['bcm5974', 'apple-spi-trackpad', 'apple-mtp-multi-touch'])
-    assert.equal(model.parseTouchpadDevice(JSON.stringify({mice: [{name}]})), name);
-  assert.equal(model.parseTouchpadDevice(JSON.stringify({mice: [{name: 'bcm5974-mouse'}]})), '');
-}
 console.log('Passed: device selection, fine scroll steps, stale-read rejection, debounce ordering, timeout recovery, and IPC configuration.');
