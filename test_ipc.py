@@ -12,6 +12,8 @@ with tempfile.TemporaryDirectory(prefix='trackpad-ipc-') as directory:
         shutil.copy2(Path('/usr/share/omarchy/shell/Ui')/original, root/dest)
     shutil.copytree('/usr/share/omarchy/shell/Commons',root/'Commons')
     props='\n'.join(re.findall(r'^  (?:moduleName|ipcTarget|manageIpc): .+$',(repo/'Panel.qml').read_text(),re.M))
+    # Read the target from the panel so the check cannot drift from the manifest.
+    target=re.search(r'^  ipcTarget: "(.+)"$',(repo/'Panel.qml').read_text(),re.M).group(1)
     (root/'shell.qml').write_text('''import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -42,13 +44,13 @@ ShellRoot {
             else: raise RuntimeError('IPC harness did not start')
             assert p.stdout.strip()=='false',p.stdout
             for method,expected in [('open','true'),('close','false'),('toggle','true'),('hide','false'),('show','true')]:
-                p=ipc('davefano.trackpad-plus',method)
+                p=ipc(target,method)
                 assert p.returncode==0,p.stderr
                 observed=ipc('verification','opened')
                 if observed.stdout.strip()!=expected:
                     log.flush();log.seek(0);print(log.read())
                     raise AssertionError(method)
-            print('All five Trackpad Plus IPC commands verified with the installed Omarchy base Panel in an isolated offscreen Quickshell instance.')
+            print(f'All five {target} IPC commands verified with the installed Omarchy base Panel in an isolated offscreen Quickshell instance.')
         finally:
             server.terminate()
             try:server.wait(timeout=3)

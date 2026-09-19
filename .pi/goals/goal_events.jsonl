@@ -7,3 +7,4 @@
 {"type":"goal_paused","goalId":"mu7yw7j0-grywon","reason":"user","status":"paused","at":"2026-09-19T14:34:00.611Z"}
 {"type":"goal_paused","goalId":"mu7yw7j0-grywon","reason":"Scheduling paused","source":"agent","at":"2026-09-19T14:34:05.563Z"}
 {"type":"goal_resumed","goalId":"mu7yw7j0-grywon","reason":"user","at":"2026-09-19T14:34:24.241Z"}
+{"type":"task_complete","goalId":"mu7yw7j0-grywon","taskId":"task-2","evidence":"devices.py parses hyprctl once (test_hyprctl_output_is_read_once) and outputs tabs/default_tab; live output: touchpads [synaptics-tm3381-002], trackpoints [tpps/2-elan-trackpoint], tabs [trackpad,trac","at":"2026-09-19T14:35:48.777Z"}

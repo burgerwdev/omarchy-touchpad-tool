@@ -26,7 +26,8 @@ import subprocess
 import sys
 
 sys.dont_write_bytecode = True
-import hypr_input  # noqa: E402
+import trackpads  # noqa: E402
+import trackpoint  # noqa: E402
 
 # Modifier taps, each its own Hyprland bind so they fire instantly
 MODS = {
@@ -40,8 +41,8 @@ runner = Path(__file__).resolve().parent / 'middle_button.py'
 state_dir = Path(os.environ.get('XDG_STATE_HOME') or Path.home() / '.local/state') / 'omarchy/trackpoint'
 store = state_dir / 'middle.json'
 config = Path.home() / '.config/hypr/bindings.lua'
-begin = '-- BEGIN io.github.artmoreno.trackpoint middle button (managed by the TrackPoint bar widget)'
-end = '-- END io.github.artmoreno.trackpoint middle button'
+begin = '-- BEGIN local.touchpad-tool middle button (managed by the Touchpad Tool bar widget)'
+end = '-- END local.touchpad-tool middle button'
 block = re.compile(r'\n?' + re.escape(begin) + r'\n.*?' + re.escape(end) + r'\n?', re.S)
 usage = ('Usage: middle.py [enable | disable | set <profile> <slot> <command> | '
          'add-app [class] | remove-app <class>]')
@@ -111,17 +112,30 @@ def focused_class():
         return ''
 
 
+def scroll_method(device):
+    """The TrackPoint's saved scroll method, or None while it is left at the driver default."""
+    with trackpads.session() as (state, live, previous):
+        return state['devices'][trackpads.device_key(state, device)]['settings'].get('scroll_method')
+
+
+def set_scroll_method(device, method):
+    """Store and apply the scroll method through the shared device writer."""
+    with trackpads.session() as (state, live, previous):
+        trackpads.change(state, trackpads.device_key(state, device), 'scroll_method', method)
+
+
 def enable(state):
     if state['enabled']:
         return
-    device = hypr_input.detect_device()
-    previous = hypr_input.get_value(device, 'scroll_method')
-    hypr_input.set_values(device, {'scroll_method': '"no_scroll"'})
+    device = trackpoint.detect_device()
+    previous = scroll_method(device)
+    # A programmable middle button needs the button back from hold-to-scroll.
+    set_scroll_method(device, 'no_scroll')
     state.update(enabled=True, previous_scroll=previous)
     try:
         write_binds(state)
     except Exception:
-        restore_scroll(device, previous)
+        set_scroll_method(device, previous)
         raise
 
 
@@ -130,11 +144,7 @@ def disable(state):
         return
     state['enabled'] = False
     write_binds(state)
-    restore_scroll(hypr_input.detect_device(), state.pop('previous_scroll', None))
-
-
-def restore_scroll(device, previous):
-    hypr_input.set_values(device, {'scroll_method': json.dumps(previous) if previous is not None else None})
+    set_scroll_method(trackpoint.detect_device(), state.pop('previous_scroll', None))
 
 
 try:

@@ -5,14 +5,14 @@
   "status": "active",
   "autoContinue": true,
   "usage": {
-    "tokensUsed": 223875,
-    "activeSeconds": 237
+    "tokensUsed": 397617,
+    "activeSeconds": 675
   },
   "sisyphus": false,
   "createdAt": "2026-09-19T05:49:13.116Z",
-  "updatedAt": "2026-09-19T14:35:30.167Z",
+  "updatedAt": "2026-09-19T14:43:20.797Z",
   "activePath": ".pi/goals/active_goal_2026091913491311_mu7yw7j0-grywon.md",
-  "revision": 72,
+  "revision": 119,
   "scheduler": {
     "version": 1,
     "owner": "01a0b829-6efd-71a3-b081-9dd79a47df0b",
@@ -44,8 +44,10 @@
       {
         "id": "task-2",
         "title": "Device autodetection and Trackpad/TrackPoint tab shell",
-        "status": "pending",
-        "verificationContract": "hyprctl devices output is parsed once and shared; on this machine both tabs appear with correct device names; with a simulated touchpad-only or trackpoint-only device list the unsupported tab is hidden and no error is raised."
+        "status": "complete",
+        "verificationContract": "hyprctl devices output is parsed once and shared; on this machine both tabs appear with correct device names; with a simulated touchpad-only or trackpoint-only device list the unsupported tab is hidden and no error is raised.",
+        "completedAt": "2026-09-19T14:35:48.777Z",
+        "evidence": "devices.py parses hyprctl once (test_hyprctl_output_is_read_once) and outputs tabs/default_tab; live output: touchpads [synaptics-tm3381-002], trackpoints [tpps/2-elan-trackpoint], tabs [trackpad,trac"
       },
       {
         "id": "task-3",
@@ -108,13 +110,13 @@ If blocked: stop and ask the user.
 - Status: running
 - Auto-continue: on
 - Sisyphus mode: no
-- Time spent: 3m57s
-- Tokens used: 224K (223,875) tokens
+- Time spent: 11m15s
+- Tokens used: 398K (397,617) tokens
 ## Tasks
 
 <!-- blockCompletion: false -->
 - [x] task-1: Scaffold merged repo and plugin shell — evidence: omarchy plugin validate exit 0; plugin list shows local.touchpad-tool discovered+enabled; shell log "Local plugin changed, reloading: local.touchpad-tool" with no QML errors; qs ipc call local.touchpa
-- [ ] task-2: Device autodetection and Trackpad/TrackPoint tab shell — contract: hyprctl devices output is parsed once and shared; on this machine both tabs appear with correct device names; with a simulated touchpad-only or trackpoint-only device list the unsupported tab is hidden and no error is raised.
+- [x] task-2: Device autodetection and Trackpad/TrackPoint tab shell — evidence: devices.py parses hyprctl once (test_hyprctl_output_is_read_once) and outputs tabs/default_tab; live output: touchpads [synaptics-tm3381-002], trackpoints [tpps/2-elan-trackpoint], tabs [trackpad,trac
 - [ ] task-3: Unified Hyprland config writer on the generated-lua path — contract: Both backends route through one writer module; writes go to the per-device state JSON plus generated lua only; hyprctl configerrors is empty after each write and an injected bad value rolls back; no code path writes hl.device blocks into ~/.config/hypr/input.lua.
 - [ ] task-4: Port the Trackpad feature set into the Trackpad tab — contract: Pointer (curve editor, profiles, tap/typing/two-finger), Scrolling and Gestures work end to end; gesture preview and overview provider function; ported python and QML tests pass.
 - [ ] task-5: Port the TrackPoint feature set into the TrackPoint tab — contract: Sensitivity slider writes and reads back the TrackPoint value; middle-button taps, holds, flicks, modifier combos and per-app profiles generate and remove the bindings block correctly; bar-icon options work; ported tests pass.

@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Per-device settings and native pointer curves for Trackpad Plus."""
+"""Per-device settings for every supported pointing device.
+
+One writer for the touchpad and the TrackPoint: per-device state JSON plus a
+generated Lua rule file, applied with hyprctl and rolled back when Hyprland
+reports a problem. Nothing here edits the user's input.lua.
+"""
 from contextlib import contextmanager
 import copy
 import ctypes
@@ -16,12 +21,28 @@ import selectors
 import stat
 import time
 
+import trackpoint  # TrackPoint names; detection only, this module owns the writes
+
 STATE_ROOT = Path(os.environ.get('XDG_STATE_HOME') or Path.home().resolve() / '.local/state')
 DIRECTORY = STATE_ROOT / 'omarchy/local-touchpads'
 STATE = DIRECTORY / 'settings.json'
 GENERATED = STATE_ROOT / 'omarchy/toggles/hypr/zz-local-touchpads.lua'
 BOOLS = {'enabled', 'natural_scroll', 'tap_to_click', 'disable_while_typing', 'clickfinger_behavior'}
 RANGES = {'sensitivity': (-1, 1), 'scroll_factor': (0.001, 10), 'scroll_scale': (0.1, 10)}
+SCROLL_METHODS = ('none', 'no_scroll', 'two_finger', 'edge', 'on_button_down')
+KINDS = ('trackpad', 'trackpoint')
+KIND_REQUIRED = {
+    'trackpad': BOOLS | {'sensitivity', 'scroll_factor'},
+    'trackpoint': {'sensitivity'},
+}
+# 'pointer_feel' is the editor's compound option: it is rewritten into
+# accel_profile/curve/curve_preset and never stored as a setting of its own.
+KIND_OPTIONAL = {
+    'trackpad': {'accel_profile', 'curve', 'curve_preset', 'scroll_scale', 'pointer_feel'},
+    'trackpoint': {'scroll_method'},
+}
+ALLOWED_GROUP_KEYS = {'id', 'label', 'names', 'settings', 'previous_pointer_feel',
+                      'configured', 'kind'}
 DEFAULT_CURVE = {'precision': 0.3, 'start': 0.8, 'end': 2.8, 'fast': 1.6}
 MAX_STATE_BYTES = 1024 * 1024
 BUILTIN_APPLE = {'apple-mtp-multi-touch', 'apple-spi-trackpad', 'apple-spi-touchpad',
@@ -145,6 +166,9 @@ def validate_setting(key, value):
     elif key == 'curve_preset':
         if value not in ('mac', 'custom'):
             raise ValueError('Unknown curve preset')
+    elif key == 'scroll_method':
+        if value not in SCROLL_METHODS:
+            raise ValueError('Unknown scroll method')
     elif key in BOOLS:
         if type(value) is not bool:
             raise ValueError('Expected a boolean')
@@ -179,9 +203,33 @@ def group_devices(mice):
     return groups
 
 
+def group_trackpoints(mice):
+    """TrackPoint devices, keyed by name like the touchpad groups."""
+    groups = {}
+    for name in trackpoint.trackpoint_names(mice):
+        validate_name(name)
+        groups.setdefault(name, {'id': name, 'label': 'TrackPoint', 'names': []})['names'].append(name)
+    return groups
+
+
+def group_all(mice):
+    """Every supported pointing device, tagged with its kind.
+
+    One grouping for the panel and the writer, so a device the panel offers can
+    never be missing from the state the writer saves.
+    """
+    groups = {}
+    for kind, found in (('trackpad', group_devices(mice)), ('trackpoint', group_trackpoints(mice))):
+        for key, group in found.items():
+            if key in groups:
+                raise ValueError(f'{key} is reported as both a trackpad and a TrackPoint')
+            groups[key] = dict(group, kind=kind)
+    return groups
+
+
 def lua_for(groups):
     # hyprctl interprets an argument starting with '--' as a CLI flag.
-    lines = ['do -- Managed by davefano.trackpad-plus. Change settings in Trackpad Plus.']
+    lines = ['do -- Managed by local.touchpad-tool. Change settings in the Touchpad Tool panel.']
     for group in groups.values():
         if not group.get('configured', True):
             continue
@@ -312,8 +360,11 @@ def validate_state(state):
     all_names = set()
     for key, group in devices.items():
         validate_name(key)
-        if not isinstance(group, dict) or set(group) - {'id', 'label', 'names', 'settings', 'previous_pointer_feel', 'configured'}:
+        if not isinstance(group, dict) or set(group) - ALLOWED_GROUP_KEYS:
             raise ValueError('Invalid trackpad group')
+        kind = group.get('kind', 'trackpad')
+        if kind not in KINDS:
+            raise ValueError('Unsupported device kind')
         if group.get('id') != key or not isinstance(group.get('label'), str) or not 1 <= len(group['label']) <= 128:
             raise ValueError('Invalid trackpad identity')
         if 'configured' in group and type(group['configured']) is not bool:
@@ -327,20 +378,29 @@ def validate_state(state):
                 raise ValueError('Duplicate trackpad name')
             all_names.add(name)
         settings = group.get('settings')
-        if not isinstance(settings, dict) or not (BOOLS | {'sensitivity', 'scroll_factor'}) <= set(settings):
-            raise ValueError('Missing trackpad settings')
+        required = KIND_REQUIRED[kind]
+        if not isinstance(settings, dict) or not required <= set(settings):
+            raise ValueError('Missing device settings')
+        if set(settings) - (required | KIND_OPTIONAL[kind]):
+            raise ValueError('Unknown setting for this device')
         for option, value in settings.items():
             validate_setting(option, value)
-        scale = settings.get('scroll_scale', max(1, settings['scroll_factor']))
-        normalized = settings['scroll_factor'] / scale
-        if not 0.01 - 1e-9 <= normalized <= 1 + 1e-9:
-            raise ValueError('Scroll speed must be between 0.01 and 1.00 of the device scale')
+        if kind == 'trackpad':
+            scale = settings.get('scroll_scale', max(1, settings['scroll_factor']))
+            normalized = settings['scroll_factor'] / scale
+            if not 0.01 - 1e-9 <= normalized <= 1 + 1e-9:
+                raise ValueError('Scroll speed must be between 0.01 and 1.00 of the device scale')
         if 'previous_pointer_feel' in group:
             validate_change('pointer_feel', group['previous_pointer_feel'])
     return state
 
 
 def validate_change(option, value):
+    if value is None:
+        # Clearing an optional device setting, e.g. the TrackPoint scroll method.
+        if option == 'scroll_method':
+            return
+        raise ValueError('Only optional settings can be cleared')
     if option != 'pointer_feel':
         validate_setting(option, value)
         return
@@ -448,6 +508,10 @@ def initialize(live):
     overrides = dict(re.findall(r'hl\.device\(\{ name = "([A-Za-z0-9_.:/+-]+)", sensitivity = (-?[0-9.]+) \}\)', text))
     for group in devices.values():
         group['configured'] = False
+        if group.get('kind') == 'trackpoint':
+            # Hyprland's global sensitivity is what an unconfigured TrackPoint inherits.
+            group['settings'] = {'sensitivity': validate_setting('sensitivity', base['sensitivity'])}
+            continue
         group['settings'] = dict(base)
         for name in group['names']:
             if name in overrides:
@@ -467,7 +531,10 @@ def saved_device_owners(live, state):
         for name in group['names']:
             owner = owners.get(name, key)
             identity = state['devices'].get(owner, group)
-            row = routed.setdefault(owner, {'id': owner, 'label': identity['label'], 'names': []})
+            # The kind must survive routing: a TrackPoint rediscovered here is
+            # still a TrackPoint, and must not be initialized with touchpad settings.
+            row = routed.setdefault(owner, {'id': owner, 'label': identity['label'], 'names': [],
+                                            'kind': identity.get('kind', group.get('kind', 'trackpad'))})
             if name not in row['names']:
                 row['names'].append(name)
     return routed
@@ -488,6 +555,10 @@ def migrate(state):
         raise ValueError('Unsupported trackpad state version; saved settings were not changed')
     updated = copy.deepcopy(state)
     for group in updated['devices'].values():
+        # Legacy migrations describe the touchpad panel; a TrackPoint group has
+        # its own small setting set and must be left exactly as it is.
+        if group.get('kind', 'trackpad') != 'trackpad':
+            continue
         settings = group['settings']
         settings.setdefault('accel_profile', 'adaptive')
         # Store the effective Hyprland value unchanged; scale is UI metadata.
@@ -537,8 +608,15 @@ def change(state, key, option, value):
     updated = copy.deepcopy(state)
     if updated['devices'][key].get('configured') is False:
         updated['devices'][key]['configured'] = True
+    kind = updated['devices'][key].get('kind', 'trackpad')
     settings = updated['devices'][key]['settings']
-    if option == 'pointer_feel':
+    if option not in KIND_REQUIRED[kind] | KIND_OPTIONAL[kind]:
+        raise ValueError('Unknown setting for this device')
+    if value is None:
+        if option not in KIND_OPTIONAL[kind] or option == 'pointer_feel':
+            raise ValueError('Only optional settings can be cleared')
+        settings.pop(option, None)
+    elif option == 'pointer_feel':
         if not isinstance(value, dict) or set(value) != {'profile', 'curve'}:
             raise ValueError('Expected a pointer profile and curve')
         profile = value['profile']
@@ -578,21 +656,21 @@ def change(state, key, option, value):
     return updated
 
 
-def main():
-    command = sys.argv[1] if len(sys.argv) > 1 else 'state'
-    if command == 'set' and len(sys.argv) == 5:
-        validate_name(sys.argv[2])
-        value = json.loads(sys.argv[4])
-        validate_change(sys.argv[3], value)
-    elif command not in ('state', 'init') or len(sys.argv) > 2:
-        raise ValueError('Usage: trackpads.py [state|init|set DEVICE OPTION JSON_VALUE]')
+@contextmanager
+def session(command='state'):
+    """The one way into the state: lock, recover, discover, reconcile.
+
+    Yields (state, live, previous) with the lock held, so every entry point
+    (this CLI, the TrackPoint sensitivity helper and the middle button) writes
+    through the same path.
+    """
     with state_lock():
         # Refuse future/corrupt state before processing even an older journal.
         raw = read_state_file(STATE)
         if raw is not None:
             migrate(json.loads(raw))
         recover_pending()
-        live = group_devices(json.loads(hypr('devices', '-j'))['mice'])
+        live = group_all(json.loads(hypr('devices', '-j'))['mice'])
         raw = read_state_file(STATE)
         if raw is not None:
             state = json.loads(raw)
@@ -618,6 +696,26 @@ def main():
             # reconciliation succeeds, so a failed/interrupted refresh retries.
             atomic_write(STATE, json.dumps(state, indent=2) + '\n')
         reconcile_generated(state, previous)
+        yield state, live, previous
+
+
+def device_key(state, device):
+    """The saved group key for a Hyprland device name."""
+    for key, group in state['devices'].items():
+        if device in group['names']:
+            return key
+    raise ValueError(f'{device} is not a known touchpad or TrackPoint')
+
+
+def main():
+    command = sys.argv[1] if len(sys.argv) > 1 else 'state'
+    if command == 'set' and len(sys.argv) == 5:
+        validate_name(sys.argv[2])
+        value = json.loads(sys.argv[4])
+        validate_change(sys.argv[3], value)
+    elif command not in ('state', 'init') or len(sys.argv) > 2:
+        raise ValueError('Usage: trackpads.py [state|init|set DEVICE OPTION JSON_VALUE]')
+    with session(command) as (state, live, previous):
         if command == 'set':
             state = change(state, sys.argv[2], sys.argv[3], value)
         print(json.dumps(snapshot(state, live)))
