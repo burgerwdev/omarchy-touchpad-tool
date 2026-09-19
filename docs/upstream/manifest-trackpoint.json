@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "id": "io.github.artmoreno.trackpoint",
+  "name": "TrackPoint",
+  "version": "1.0.0",
+  "author": "ArtMoreno",
+  "license": "MIT",
+  "homepage": "https://github.com/ArtMoreno/omarchy-trackpoint",
+  "description": "ThinkPad TrackPoint sensitivity slider and a programmable middle button (taps, holds, flicks, per-app profiles) in the Omarchy bar",
+  "kinds": ["bar-widget"],
+  "entryPoints": {
+    "barWidget": "TrackPoint.qml"
+  },
+  "barWidget": {
+    "displayName": "TrackPoint",
+    "description": "TrackPoint sensitivity slider and middle button actions",
+    "category": "System",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "logo": "wordmark"
+    },
+    "schema": [
+      {
+        "key": "logo",
+        "type": "string",
+        "label": "Bar icon",
+        "description": "wordmark (ThinkPad text), dot (red TrackPoint dot) or color (color ThinkPad logo)",
+        "options": ["wordmark", "dot", "color"],
+        "defaultValue": "wordmark"
+      }
+    ]
+  }
+}

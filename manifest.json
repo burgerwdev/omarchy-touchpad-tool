@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "id": "local.touchpad-tool",
+  "name": "Touchpad Tool",
+  "version": "2026.09.19.0",
+  "author": "hui",
+  "license": "MIT",
+  "description": "Trackpad and TrackPoint controls in one panel: per-device pointer feel, scrolling, gestures, TrackPoint sensitivity and middle-button actions.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Touchpad Tool",
+    "description": "Trackpad and TrackPoint controls in one panel.",
+    "category": "Input",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "logo": "wordmark"
+    },
+    "schema": [
+      {
+        "key": "logo",
+        "type": "string",
+        "label": "Bar icon",
+        "description": "wordmark (ThinkPad text), dot (red TrackPoint dot) or color (color ThinkPad logo)",
+        "options": ["wordmark", "dot", "color"],
+        "defaultValue": "wordmark"
+      }
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "id": "davefano.trackpad-plus",
+  "name": "Trackpad Plus",
+  "version": "2026.09.15.2",
+  "author": "David Fano",
+  "description": "Fine-grained, per-device trackpad controls and pointer-feel tuning for Omarchy.",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "Panel.qml"
+  },
+  "barWidget": {
+    "displayName": "Trackpad Plus",
+    "description": "Fine-grained, per-device trackpad controls and pointer-feel tuning for Omarchy.",
+    "category": "Input",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}
