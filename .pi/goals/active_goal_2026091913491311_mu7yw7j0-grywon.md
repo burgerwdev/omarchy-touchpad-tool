@@ -5,14 +5,14 @@
   "status": "active",
   "autoContinue": true,
   "usage": {
-    "tokensUsed": 397617,
-    "activeSeconds": 675
+    "tokensUsed": 502175,
+    "activeSeconds": 910
   },
   "sisyphus": false,
   "createdAt": "2026-09-19T05:49:13.116Z",
-  "updatedAt": "2026-09-19T14:43:20.797Z",
+  "updatedAt": "2026-09-19T14:47:38.224Z",
   "activePath": ".pi/goals/active_goal_2026091913491311_mu7yw7j0-grywon.md",
-  "revision": 119,
+  "revision": 152,
   "scheduler": {
     "version": 1,
     "owner": "01a0b829-6efd-71a3-b081-9dd79a47df0b",
@@ -52,8 +52,10 @@
       {
         "id": "task-3",
         "title": "Unified Hyprland config writer on the generated-lua path",
-        "status": "pending",
-        "verificationContract": "Both backends route through one writer module; writes go to the per-device state JSON plus generated lua only; hyprctl configerrors is empty after each write and an injected bad value rolls back; no code path writes hl.device blocks into ~/.config/hypr/input.lua."
+        "status": "complete",
+        "verificationContract": "Both backends route through one writer module; writes go to the per-device state JSON plus generated lua only; hyprctl configerrors is empty after each write and an injected bad value rolls back; no code path writes hl.device blocks into ~/.config/hypr/input.lua.",
+        "completedAt": "2026-09-19T14:43:26.050Z",
+        "evidence": "Live: trackpads.py state/init wrote state JSON + zz-local-touchpads.lua only, hyprctl configerrors empty, input.lua md5 unchanged (45ffc437...) across state/set/clear; control.py read 0.35 -> set 0.25"
       },
       {
         "id": "task-4",
@@ -110,14 +112,14 @@ If blocked: stop and ask the user.
 - Status: running
 - Auto-continue: on
 - Sisyphus mode: no
-- Time spent: 11m15s
-- Tokens used: 398K (397,617) tokens
+- Time spent: 15m10s
+- Tokens used: 502K (502,175) tokens
 ## Tasks
 
 <!-- blockCompletion: false -->
 - [x] task-1: Scaffold merged repo and plugin shell — evidence: omarchy plugin validate exit 0; plugin list shows local.touchpad-tool discovered+enabled; shell log "Local plugin changed, reloading: local.touchpad-tool" with no QML errors; qs ipc call local.touchpa
 - [x] task-2: Device autodetection and Trackpad/TrackPoint tab shell — evidence: devices.py parses hyprctl once (test_hyprctl_output_is_read_once) and outputs tabs/default_tab; live output: touchpads [synaptics-tm3381-002], trackpoints [tpps/2-elan-trackpoint], tabs [trackpad,trac
-- [ ] task-3: Unified Hyprland config writer on the generated-lua path — contract: Both backends route through one writer module; writes go to the per-device state JSON plus generated lua only; hyprctl configerrors is empty after each write and an injected bad value rolls back; no code path writes hl.device blocks into ~/.config/hypr/input.lua.
+- [x] task-3: Unified Hyprland config writer on the generated-lua path — evidence: Live: trackpads.py state/init wrote state JSON + zz-local-touchpads.lua only, hyprctl configerrors empty, input.lua md5 unchanged (45ffc437...) across state/set/clear; control.py read 0.35 -> set 0.25
 - [ ] task-4: Port the Trackpad feature set into the Trackpad tab — contract: Pointer (curve editor, profiles, tap/typing/two-finger), Scrolling and Gestures work end to end; gesture preview and overview provider function; ported python and QML tests pass.
 - [ ] task-5: Port the TrackPoint feature set into the TrackPoint tab — contract: Sensitivity slider writes and reads back the TrackPoint value; middle-button taps, holds, flicks, modifier combos and per-app profiles generate and remove the bindings block correctly; bar-icon options work; ported tests pass.
 - [ ] task-6: Reconcile duplicated functionality and delete dead paths — contract: grep shows one implementation each for sensitivity, scroll and tap settings, one writer and one reload path; retired input.lua editing code and markers are gone or migrated; no duplicated helpers remain between the two backends.

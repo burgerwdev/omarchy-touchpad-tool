@@ -40,12 +40,13 @@ with tempfile.TemporaryDirectory(prefix='trackpad-plus-lint-') as directory:
                 continue
             message = warning['message']
             host_property = warning['id'] == 'missing-property' and re.fullmatch(
-                r'Member "(foreground|fontFamily|body|caption|controlGap|display|heading|rowPaddingX|title)" not found on type "QObject"', message)
+                r'Member "(foreground|fontFamily|iconFont|body|caption|controlGap|display|heading|rowPaddingX|title)" not found on type "QObject"', message)
             host_signal = warning['id'] == 'signal-handler-parameters' and message == (
                 'Type QProcess::ExitStatus of parameter exitStatus in signal called exited was not found, '
                 'but is required to compile onExited. Did you add all imports and dependencies?')
             relative = Path(source['filename']).relative_to(repo).as_posix()
-            allowed = (relative == 'Panel.qml' and (host_property or host_signal)) or (
+            panel = relative in ('Panel.qml', 'TrackpadPanel.qml', 'TrackPointPanel.qml')
+            allowed = (panel and (host_property or host_signal)) or (
                 relative in ('overview/Session.qml', 'overview/shell.qml') and host_signal)
             if warning['type'] == 'warning' and allowed:
                 known += 1

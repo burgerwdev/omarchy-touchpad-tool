@@ -8,20 +8,21 @@ import qs.Commons
 import "Model.js" as Model
 import "Curve.js" as Curve
 
-Panel {
+// Trackpad controls: the body of the Trackpad tab. The merged panel owns the
+// bar icon, the popup and the keyboard handling, and drives this body through
+// panelOpen, keyCatcher and the two signals.
+Item {
   id: root
-  moduleName: "davefano.trackpad-plus"
-  ipcTarget: "davefano.trackpad-plus"
-  manageIpc: true
-
-  property string releaseVersion: ""
-  FileView {
-    path: Qt.resolvedUrl("manifest.json")
-    onLoaded: {
-      try { root.releaseVersion = JSON.parse(text()).version || "" }
-      catch (error) { root.releaseVersion = "" }
-    }
-  }
+  property var bar: null
+  property bool panelOpen: false
+  property var keyCatcher: null
+  signal closeRequested()
+  signal switchPanelRequested(int direction)
+  readonly property bool hasDevice: deviceName !== ""
+  readonly property real contentWidth: Style.space(root.editingCurve ? 430 : 340)
+  readonly property real contentHeight: root.editingCurve ? curveColumn.implicitHeight : column.implicitHeight
+  implicitHeight: root.contentHeight
+  function togglePrimary() { root.toggleTouchpad() }
 
   // Each panel instance can select a device; the helper serializes writes across bars.
   property var devices: []
@@ -248,13 +249,8 @@ Panel {
     selectDevice(selectedDevice) // Commit pending slider edits before hiding them.
     activeTab = tab
     focusSection = "tabs"
-    keyCatcher.forceActiveFocus()
+    if (root.keyCatcher) root.keyCatcher.forceActiveFocus()
     if (tab === "gestures") refreshGestures()
-  }
-
-  readonly property string icon: {
-    if (!deviceName) return ""
-    return touchpadEnabled ? "󰟸" : "󰤳"
   }
 
   readonly property string heroStatusText: deviceConnected
@@ -474,14 +470,10 @@ Panel {
   }
 
   // ---- Lifecycle ----
-  visible: deviceName !== ""
-  implicitWidth: button.implicitWidth
-  implicitHeight: button.implicitHeight
-
   Component.onCompleted: refresh()
 
-  onOpenedChanged: {
-    if (opened) {
+  onPanelOpenChanged: {
+    if (panelOpen) {
       editingCurve = false
       refresh()
       if (activeTab === "gestures") refreshGestures()
@@ -493,7 +485,7 @@ Panel {
   // Poll while open so external changes are reflected.
   Timer {
     interval: 3000
-    running: root.opened || root.devices.length === 0
+    running: root.panelOpen || root.devices.length === 0
     repeat: true
     onTriggered: root.refresh()
   }
@@ -575,43 +567,7 @@ Panel {
     }
   }
 
-  // ---- Bar icon ----
-  BarIconButton {
-    id: button
-    anchors.fill: parent
-    bar: root.bar
-    text: root.icon
-    onPressed: function(b) {
-      if (b === Qt.RightButton) root.toggleTouchpad()
-      else root.toggle()
-    }
-  }
-
-  // ---- Popup panel ----
-  KeyboardPanel {
-    id: panel
-    anchorItem: button
-    owner: root
-    bar: root.bar
-    open: root.opened
-    focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(root.editingCurve ? 430 : 340))
-    contentHeight: panel.fittedContentHeight(root.editingCurve ? curveColumn.implicitHeight : column.implicitHeight)
-
-    PanelKeyCatcher {
-      id: keyCatcher
-      anchors.fill: parent
-      blocked: root.keyboardNavigationBlocked()
-      onMoveRequested: function(dx, dy) {
-        if (!root.cursorActive) { root.cursorActive = true; return }
-        if (dy !== 0) root.moveCursor(dy)
-        else if (dx !== 0) root.moveCursorH(dx)
-      }
-      onActivateRequested: if (root.cursorActive) root.activateCursor()
-      onCloseRequested: root.close()
-      onTabRequested: function(direction) { root.switchPanel(direction) }
-
-      ScrollView {
+  ScrollView {
         anchors.fill: parent
         visible: root.editingCurve
         clip: true
@@ -644,7 +600,7 @@ Panel {
             canRestore: !!root.previousFeels[root.selectedDevice]
             onApplyRequested: function(value) { root.applyPointerFeel(value) }
             onRestoreRequested: root.restorePointerFeel()
-            onBackRequested: { root.editingCurve = false; keyCatcher.forceActiveFocus() }
+            onBackRequested: { root.editingCurve = false; if (root.keyCatcher) root.keyCatcher.forceActiveFocus() }
           }
         }
       }
@@ -1306,22 +1262,10 @@ Panel {
           onApplyRequested: function(settings) { root.runGestureAction("set", settings) }
           onRestoreRequested: root.runGestureAction("restore")
           onRefreshRequested: root.refreshGestures()
-          onBackRequested: { root.changeTab("pointer"); keyCatcher.forceActiveFocus() }
-        }
-
-        Text {
-          width: parent.width
-          visible: root.releaseVersion !== ""
-          text: "Version " + root.releaseVersion
-          horizontalAlignment: Text.AlignHCenter
-          color: Qt.alpha(root.bar.foreground, 0.6)
-          font.family: root.bar.fontFamily
-          font.pixelSize: Style.font.caption
+          onBackRequested: { root.changeTab("pointer"); if (root.keyCatcher) root.keyCatcher.forceActiveFocus() }
         }
       }
       }
-    }
-  }
 
   component SettingRow: CursorSurface {
     id: settingRow

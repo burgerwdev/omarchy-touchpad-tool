@@ -16,14 +16,14 @@ CONFIG = Path(os.environ.get('XDG_CONFIG_HOME') or Path.home() / '.config') / 'h
 INPUT = CONFIG / 'input.lua'
 JOURNAL = core.DIRECTORY / 'gestures.pending.json'
 BACKUP = core.DIRECTORY / 'gesture-input-original.lua.txt'
-BEGIN = '-- BEGIN Trackpad Plus gestures\n'
-END = '-- END Trackpad Plus gestures\n'
-ANCHOR = '-- Trackpad Plus original gesture location\n'
+BEGIN = '-- BEGIN local.touchpad-tool gestures\n'
+END = '-- END local.touchpad-tool gestures\n'
+ANCHOR = '-- local.touchpad-tool original gesture location\n'
 PROVIDERS = ('hymission', 'trackpad-plus')
 COMPANION = Path(__file__).resolve().with_name('overview-control.py')
 # Fixed command text, never caller-provided Lua/shell. Expansion happens in the
 # compositor's environment, preserving spaces and avoiding a machine-specific path.
-COMPANION_COMMAND = 'python3 -B "${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/davefano.trackpad-plus/overview-control.py" '
+COMPANION_COMMAND = 'python3 -B "${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/local.touchpad-tool/overview-control.py" '
 
 # Tokens preserve positions while comments/strings can be masked for structural checks.
 TOKEN = re.compile(r'--\[(=*)\[[\s\S]*?\]\1\]|--[^\n]*|\[(=*)\[[\s\S]*?\]\2\]|"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])*\'')

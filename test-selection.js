@@ -3,7 +3,8 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const { spawnSync } = require('node:child_process');
-const qml = fs.readFileSync(path.join(__dirname, 'Panel.qml'), 'utf8');
+// The Trackpad tab body owns these functions; the merged Panel.qml is only the shell.
+const qml = fs.readFileSync(path.join(__dirname, 'TrackpadPanel.qml'), 'utf8');
 
 // Execute the real QML functions; callback ordering is controlled by each test.
 function context() {
@@ -25,6 +26,8 @@ function context() {
     pointerDebounce: { running: false, stop() { this.running = false; } }
   };
   vm.createContext(ctx);
+  // The QML functions are written against `root`; point it at the same context.
+  ctx.root = ctx;
   const functions = qml.match(/^  function \w+\([^\n]*\) \{[^\n]*\}$|^  function \w+\([^\n]*\) \{\n[\s\S]*?^  \}/gm);
   for (const source of functions) vm.runInContext(source, ctx);
   ctx.loadSelection();
@@ -122,9 +125,11 @@ function context() {
 
 {
   const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'manifest.json'), 'utf8'));
-  assert.equal(manifest.id, 'davefano.trackpad-plus');
-  assert.match(qml, /ipcTarget: "davefano\.trackpad-plus"/);
-  assert.match(qml, /manageIpc: true/);
+  // The merged shell owns the plugin identity; the tab body keeps the backend calls.
+  const shell = fs.readFileSync(path.join(__dirname, 'Panel.qml'), 'utf8');
+  assert.equal(manifest.id, 'local.touchpad-tool');
+  assert.match(shell, /ipcTarget: "local\.touchpad-tool"/);
+  assert.match(shell, /manageIpc: true/);
   assert.match(qml, /root\.receiveState\(String\(text\)\)/);
   assert.match(qml, /Qt\.callLater\(function\(\) \{ root\.finishStateRead\(code\) \}\)/);
   assert.match(qml, /Qt\.callLater\(function\(\) \{ root\.finishAction\(code\) \}\)/);

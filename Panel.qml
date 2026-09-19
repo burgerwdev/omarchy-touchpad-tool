@@ -70,11 +70,29 @@ Panel {
   }
 
   function changeDeviceTab(tab) {
+    if (root.activeDeviceTab === tab) return
     activeDeviceTab = tab
+  }
+
+  // The loaded tab body owns its own keyboard navigation; the merged panel only
+  // routes keys into whichever body is showing.
+  readonly property var activeBody: deviceBody.item || null
+  readonly property real bodyWidth: root.activeBody && root.activeBody.contentWidth
+    ? root.activeBody.contentWidth : Style.space(360)
+  function bodyFunction(name) {
+    return root.activeBody && typeof root.activeBody[name] === "function" ? root.activeBody[name] : null
   }
 
   implicitWidth: button.implicitWidth
   implicitHeight: button.implicitHeight
+
+  // Right-click keeps the original per-tool shortcut: on the Trackpad tab it
+  // toggles the touchpad, elsewhere it just opens the panel.
+  function togglePrimaryDevice() {
+    var toggle = root.bodyFunction("togglePrimary")
+    if (toggle) toggle()
+    else root.toggle()
+  }
 
   Component.onCompleted: detectDevices()
 
@@ -156,7 +174,10 @@ Panel {
         }
       }
     }
-    onPressed: function(b) { root.toggle() }
+    onPressed: function(b) {
+      if (b === Qt.RightButton) root.togglePrimaryDevice()
+      else root.toggle()
+    }
   }
 
   // ---- Popup panel ----
@@ -167,12 +188,27 @@ Panel {
     bar: root.bar
     open: root.opened
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(Style.space(360))
+    contentWidth: panel.fittedContentWidth(root.bodyWidth)
     contentHeight: panel.fittedContentHeight(column.implicitHeight)
 
     PanelKeyCatcher {
       id: keyCatcher
       anchors.fill: parent
+      blocked: {
+        var blocked = root.bodyFunction("keyboardNavigationBlocked")
+        return blocked ? blocked() : false
+      }
+      onMoveRequested: function(dx, dy) {
+        var body = root.activeBody
+        if (!body || typeof body.moveCursor !== "function") return
+        if (!body.cursorActive) { body.cursorActive = true; return }
+        if (dy !== 0) body.moveCursor(dy)
+        else if (dx !== 0 && typeof body.moveCursorH === "function") body.moveCursorH(dx)
+      }
+      onActivateRequested: {
+        var activate = root.bodyFunction("activateCursor")
+        if (activate && root.activeBody.cursorActive) activate()
+      }
       onCloseRequested: root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
 
@@ -244,23 +280,12 @@ Panel {
 
         Component {
           id: trackpadBody
-          Column {
-            width: parent ? parent.width : 0
-            spacing: Style.space(8)
-            Text {
-              text: "Trackpad"
-              color: root.bar.foreground
-              font.family: root.bar.fontFamily
-              font.pixelSize: Style.font.body
-            }
-            Text {
-              width: parent.width
-              text: root.touchpads.length ? root.touchpads.join(", ") : "No trackpad detected."
-              color: Qt.alpha(root.bar.foreground, 0.65)
-              wrapMode: Text.Wrap
-              font.family: root.bar.fontFamily
-              font.pixelSize: Style.font.caption
-            }
+          TrackpadPanel {
+            bar: root.bar
+            panelOpen: root.opened
+            keyCatcher: keyCatcher
+            onCloseRequested: root.close()
+            onSwitchPanelRequested: function(direction) { root.switchPanel(direction) }
           }
         }
 
