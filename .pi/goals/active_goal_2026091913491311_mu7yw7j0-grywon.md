@@ -5,14 +5,14 @@
   "status": "active",
   "autoContinue": true,
   "usage": {
-    "tokensUsed": 678600,
-    "activeSeconds": 1568
+    "tokensUsed": 749637,
+    "activeSeconds": 1732
   },
   "sisyphus": false,
   "createdAt": "2026-09-19T05:49:13.116Z",
-  "updatedAt": "2026-09-19T14:59:23.787Z",
+  "updatedAt": "2026-09-19T15:02:23.836Z",
   "activePath": ".pi/goals/active_goal_2026091913491311_mu7yw7j0-grywon.md",
-  "revision": 211,
+  "revision": 229,
   "scheduler": {
     "version": 1,
     "owner": "01a0b829-6efd-71a3-b081-9dd79a47df0b",
@@ -76,8 +76,10 @@
       {
         "id": "task-6",
         "title": "Reconcile duplicated functionality and delete dead paths",
-        "status": "pending",
-        "verificationContract": "grep shows one implementation each for sensitivity, scroll and tap settings, one writer and one reload path; retired input.lua editing code and markers are gone or migrated; no duplicated helpers remain between the two backends."
+        "status": "complete",
+        "verificationContract": "grep shows one implementation each for sensitivity, scroll and tap settings, one writer and one reload path; retired input.lua editing code and markers are gone or migrated; no duplicated helpers remain between the two backends.",
+        "completedAt": "2026-09-19T14:59:33.628Z",
+        "evidence": "grep: only trackpads.py writes hl.device rules; one reload+configerrors helper (trackpads.reload_checked) now used by gestures.reload_checked and the middle button (gestures' remaining configerrors us"
       },
       {
         "id": "task-7",
@@ -116,8 +118,8 @@ If blocked: stop and ask the user.
 - Status: running
 - Auto-continue: on
 - Sisyphus mode: no
-- Time spent: 26m08s
-- Tokens used: 679K (678,600) tokens
+- Time spent: 28m52s
+- Tokens used: 750K (749,637) tokens
 ## Tasks
 
 <!-- blockCompletion: false -->
@@ -126,7 +128,7 @@ If blocked: stop and ask the user.
 - [x] task-3: Unified Hyprland config writer on the generated-lua path — evidence: Live: trackpads.py state/init wrote state JSON + zz-local-touchpads.lua only, hyprctl configerrors empty, input.lua md5 unchanged (45ffc437...) across state/set/clear; control.py read 0.35 -> set 0.25
 - [x] task-4: Port the Trackpad feature set into the Trackpad tab — evidence: TrackpadPanel.qml converted to a tab body and loaded by Panel.qml through the device Loader; qmllint clean (only allowlisted host-metadata diagnostics); test-selection.js passes against the real QML f
 - [x] task-5: Port the TrackPoint feature set into the TrackPoint tab — evidence: Live: control.py reads/writes the TrackPoint sensitivity through the shared writer (0.35 -> 0.25 -> restored); middle.py enable wrote the new-marker bindings block (press/release + SUPER + mouse:274 m
-- [ ] task-6: Reconcile duplicated functionality and delete dead paths — contract: grep shows one implementation each for sensitivity, scroll and tap settings, one writer and one reload path; retired input.lua editing code and markers are gone or migrated; no duplicated helpers remain between the two backends.
+- [x] task-6: Reconcile duplicated functionality and delete dead paths — evidence: grep: only trackpads.py writes hl.device rules; one reload+configerrors helper (trackpads.reload_checked) now used by gestures.reload_checked and the middle button (gestures' remaining configerrors us
 - [ ] task-7: Conflict detection, backup, disable and settings import flow — contract: With davefano.trackpad-plus installed the panel detects it and offers backup + disable + import; the consent path performs a timestamped backup before disabling; declining changes nothing; uninstall is only instructed, never executed; existing touchpad and trackpoint values appear after import.
 - [ ] task-8: Documentation, screenshots and final verification pass — contract: README documents tabs, autodetection, conflict/import flow, file changes and removal; screenshots match the shipped style; the full verification contract (tests, lint, live checks, greps, criteria re-read) is executed with results recorded.
 
