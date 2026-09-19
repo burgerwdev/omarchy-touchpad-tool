@@ -88,11 +88,53 @@ enum values are refused before anything is written.
 6. Suites, lint and QML tests pass; every control was driven and verified as in
    (d).
 
+## Defects found and fixed during this verification
+
+The screenshot check in (c) is what caught these; neither was visible from the
+log-free live shell at the time.
+
+1. **The tab body rendered empty.** The popup sized itself from the visible
+   body's content height, but a body that both anchored its content to itself
+   *and* reported its own implicit height from that content measured zero, so the
+   popup collapsed to its chrome (title, tab row, footer) with no controls.
+   Fixed by giving the body a determinate box (`bodyWidth`, `bodyHeight` in
+   `Panel.qml`, per tab) and letting each body scroll inside it; the
+   content-height protocol was removed from both bodies.
+2. **The widget failed to load entirely after that change.**
+   `TrackPointPanel.qml` gained a `ScrollView` without `import
+   QtQuick.Controls`, so Quickshell reported `ScrollView is not a type`,
+   `Type TrackPointPanel unavailable` and dropped the widget (no IPC target, no
+   bar icon). Fixed by adding the import; `lint-qml.py` cannot catch a missing
+   module import for a host-independent type, which is why the live reload check
+   matters.
+
+The merge also needed a shell restart to pick up plugin QML changes
+(`omarchy-restart-shell`); touch-only reloads were not enough during this pass.
+
+## Screenshots (verified, not just captured)
+
+`assets/screenshots/trackpad-tab.png` (339×685) and
+`assets/screenshots/trackpoint-tab.png` (357×606) were captured from the running
+panel and then read back with OCR, because this session cannot view images:
+
+| Shot | OCR found |
+|---|---|
+| Trackpad | `Touchpad & TrackPoint`, `Trackpad TrackPoint`, the device name, `Other tools for these devices` / `Trackpad Plus (disabled)` / `Back up` / `Back up & import` / uninstall hint, `Pointer Scrolling Gestures`, `Pointer Speed`, `Pointer feel`, `Tap to Click` |
+| TrackPoint | `TrackPoint`, `Pointer sensitivity 0.35`, `Slower`/`Faster`, `Reset to default`, `ThinkPad | Red dot | Color logo`, `Middle button` |
+
+Both crops are diffed against a panel-closed baseline, so the images contain the
+panel card only — no terminal or desktop content. The TrackPoint shot was taken
+with device detection temporarily restricted to the TrackPoint tab so the tab
+could be shown without a synthetic click; that change was reverted and the shell
+restarted (the two-tab row is present again in the live panel).
+
 ## Residual risk
 
-The tab visuals were captured
-(`assets/screenshots/trackpad-tab.png`, `trackpoint-tab.png`) but the agent
-could not view images in this session, so "style matches the original panels" is
-supported only by the fact that the tab bodies are the upstream QML files with
-their own styling, plus a clean lint and a rendering panel. A human glance at
-the panel is still the final check.
+- The screenshots verify that each tab renders its own controls in the shipped
+  style; a human glance is still the final check on visual polish.
+- The Trackpad tab's three inner tabs (Pointer/Scrolling/Gestures) were verified
+  by OCR for the default Pointer tab plus the shared inner-tab row; the Gestures
+  tab's own controls are covered by the gesture test suite and by
+  `gestures.py` live checks rather than by a screenshot.
+- Gesture apply is refused on this machine because gesture settings already live
+  in another Hyprland file; that is the pre-existing, intended behaviour.

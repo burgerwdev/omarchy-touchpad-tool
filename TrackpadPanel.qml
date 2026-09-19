@@ -20,8 +20,6 @@ Item {
   signal switchPanelRequested(int direction)
   readonly property bool hasDevice: deviceName !== ""
   readonly property real contentWidth: Style.space(root.editingCurve ? 430 : 340)
-  readonly property real contentHeight: root.editingCurve ? curveColumn.implicitHeight : column.implicitHeight
-  implicitHeight: root.contentHeight
   function togglePrimary() { root.toggleTouchpad() }
 
   // Each panel instance can select a device; the helper serializes writes across bars.

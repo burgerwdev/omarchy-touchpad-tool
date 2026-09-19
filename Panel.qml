@@ -79,6 +79,9 @@ Panel {
   readonly property var activeBody: deviceBody.item || null
   readonly property real bodyWidth: root.activeBody && root.activeBody.contentWidth
     ? root.activeBody.contentWidth : Style.space(360)
+  // A determinate body box: the tab bodies scroll inside it, so the popup never
+  // depends on content-height propagation through the popup's own layout.
+  readonly property real bodyHeight: root.activeDeviceTab === "trackpoint" ? Style.space(430) : Style.space(470)
   function bodyFunction(name) {
     return root.activeBody && typeof root.activeBody[name] === "function" ? root.activeBody[name] : null
   }
@@ -430,7 +433,8 @@ Panel {
         // Device tabs host the ported Trackpad and TrackPoint controls.
         Loader {
           id: deviceBody
-          width: parent.width
+          width: root.bodyWidth
+          height: root.bodyHeight
           sourceComponent: root.activeDeviceTab === "trackpoint" ? trackPointBody : trackpadBody
         }
 

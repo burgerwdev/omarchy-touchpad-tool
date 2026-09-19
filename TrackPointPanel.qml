@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import QtQuick.Controls
 import Quickshell
 import Quickshell.Io
 import qs.Ui
@@ -124,8 +125,6 @@ Item {
     return options
   }
   readonly property real contentWidth: Style.space(360)
-  readonly property real contentHeight: content.implicitHeight
-  implicitHeight: root.contentHeight
 
   // Arrow keys nudge the sensitivity, as in the original panel.
   function moveCursor(dx) { if (dx !== 0) root.setSensitivity(root.sensitivity + dx * 0.05) }
@@ -239,10 +238,15 @@ Item {
     root.logoRequested(value)
   }
 
-  Column {
-    id: content
-    width: parent.width
-    spacing: Style.space(12)
+  ScrollView {
+    anchors.fill: parent
+    clip: true
+    contentWidth: availableWidth
+
+    Column {
+      id: content
+      width: parent.width
+      spacing: Style.space(12)
         Text {
           text: "TrackPoint"
           color: root.bar.foreground
@@ -519,4 +523,5 @@ Item {
           font.pixelSize: Style.font.caption
         }
       }
+    }
 }
