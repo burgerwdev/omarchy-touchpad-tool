@@ -8,7 +8,21 @@ import subprocess
 import tempfile
 
 repo = Path(__file__).resolve().parent
-lint = shutil.which('qmllint') or '/usr/lib/qt6/bin/qmllint'
+
+
+def find_lint():
+    """Prefer a qmllint that understands --json; /usr/bin/qmllint may be Qt5-era."""
+    candidates = [shutil.which('qmllint'), '/usr/lib/qt6/bin/qmllint']
+    for candidate in candidates:
+        if not candidate or not Path(candidate).exists():
+            continue
+        probe = subprocess.run([candidate, '--help'], capture_output=True, text=True)
+        if '--json' in probe.stdout:
+            return candidate
+    raise SystemExit('No qmllint with --json support found (tried PATH and /usr/lib/qt6/bin/qmllint)')
+
+
+lint = find_lint()
 sources = sorted([*repo.glob('*.qml'), *(repo / 'overview').rglob('*.qml')])
 with tempfile.TemporaryDirectory(prefix='trackpad-plus-lint-') as directory:
     (Path(directory) / 'qs').symlink_to('/usr/share/omarchy/shell', target_is_directory=True)

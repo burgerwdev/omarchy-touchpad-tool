@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import qs.Ui
 import qs.Commons
+import "DeviceTabs.js" as DeviceTabs
 
 // One bar widget for both pointing devices. The top-level Trackpad/TrackPoint
 // tabs are chosen by what the machine actually has attached; each tab keeps the
@@ -40,12 +41,16 @@ Panel {
   }
 
   // ---- Detected hardware ----
+  // devices.py owns the classification and the tab list, so the panel, the
+  // touchpad backend and the TrackPoint backend can never disagree.
   property var touchpads: []
   property var trackpoints: []
+  property var deviceTabs: []
   readonly property bool hasTouchpad: touchpads.length > 0
   readonly property bool hasTrackPoint: trackpoints.length > 0
-  readonly property bool bothDevices: hasTouchpad && hasTrackPoint
-  property string activeDeviceTab: "trackpad"
+  readonly property bool bothDevices: DeviceTabs.showsRow(deviceTabs)
+  readonly property var deviceTabModel: DeviceTabs.model(deviceTabs, touchpads, trackpoints)
+  property string activeDeviceTab: ""
   property string deviceStatus: ""
 
   function detectDevices() {
@@ -58,11 +63,10 @@ Panel {
     if (data.error) { deviceStatus = data.error; return }
     touchpads = data.touchpads || []
     trackpoints = data.trackpoints || []
+    deviceTabs = data.tabs || []
     deviceStatus = ""
-    // Keep the visible tab: prefer the port the panel was already showing, then
-    // fall back to whichever device exists.
-    if (activeDeviceTab === "trackpad" && !hasTouchpad && hasTrackPoint) activeDeviceTab = "trackpoint"
-    else if (activeDeviceTab === "trackpoint" && !hasTrackPoint && hasTouchpad) activeDeviceTab = "trackpad"
+    // A device can be unplugged between refreshes: fall back to whatever is left.
+    activeDeviceTab = DeviceTabs.activeTab(activeDeviceTab, deviceTabs, data.default_tab)
   }
 
   function changeDeviceTab(tab) {
@@ -186,20 +190,17 @@ Panel {
           font.bold: true
         }
 
-        // Device tabs: only worth showing when both kinds are attached.
+        // Device tabs: only worth showing when more than one kind is attached.
         Row {
           visible: root.bothDevices
           width: parent.width
           spacing: Style.space(4)
           Repeater {
-            model: [
-              { key: "trackpad", label: "Trackpad" },
-              { key: "trackpoint", label: "TrackPoint" }
-            ]
+            model: root.deviceTabModel
             Controls.Button {
               id: deviceTab
               required property var modelData
-              width: (column.width - Style.space(4)) / 2
+              width: (column.width - Style.space(4) * (root.deviceTabModel.length - 1)) / Math.max(1, root.deviceTabModel.length)
               height: Style.space(34)
               text: modelData.label
               Accessible.name: modelData.label + " tab"
