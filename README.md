@@ -65,7 +65,7 @@ omarchy plugin enable local.touchpad-tool
 Or straight from git:
 
 ```sh
-omarchy plugin add git@github.com:burgerwdev/omarchy-touchpad-tool.git --enable
+omarchy plugin add https://github.com/burgerwdev/omarchy-touchpad-tool.git --enable
 ```
 
 ## Other tools for these devices
