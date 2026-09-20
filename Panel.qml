@@ -91,51 +91,8 @@ Panel {
     return root.activeBody && typeof root.activeBody[name] === "function" ? root.activeBody[name] : null
   }
 
-  // ---- Other tools that manage these devices ----
-  // Nothing here disables or removes anything by itself: every action is a press
-  // in the panel, and each one backs up first.
-  property var adoptOthers: []
-  property var adoptLegacy: []
-  property string adoptStatus: ""
-  property string adoptRemoveHint: ""
-  readonly property bool adoptEnabledOthers: adoptOthers.some(function(plugin) { return plugin.enabled })
-  readonly property bool adoptNeedsAttention: adoptOthers.length > 0 || adoptLegacy.length > 0
-  readonly property string adoptSummary: {
-    var parts = []
-    for (var i = 0; i < adoptOthers.length; i++)
-      parts.push(adoptOthers[i].name + (adoptOthers[i].enabled ? " (enabled)" : " (disabled)"))
-    for (var j = 0; j < adoptLegacy.length; j++)
-      parts.push("left-over settings in " + String(adoptLegacy[j].file).split("/").pop())
-    return parts.join(" · ")
-  }
-
   function bounded(seconds, argv) {
     return ["timeout", "-k", "2", String(seconds)].concat(argv)
-  }
-
-  function refreshAdopt() {
-    if (!adoptProc.running && !adoptAction.running) adoptProc.running = true
-  }
-
-  function receiveAdopt(raw) {
-    try {
-      var data = JSON.parse(raw)
-      if (data.error) { adoptStatus = data.error; return }
-      adoptOthers = data.others || []
-      adoptLegacy = data.legacy || []
-      adoptRemoveHint = (data.remove_hint || []).join(" · ")
-      adoptStatus = ""
-    } catch (error) { adoptStatus = "Could not check for other input tools." }
-  }
-
-  function runAdopt(action, pluginId) {
-    if (adoptAction.running) return
-    adoptStatus = action === "backup" ? "Backing up…"
-      : action === "import" ? "Backing up, then importing…" : "Backing up, then disabling…"
-    var args = ["python3", "-B", root.adoptBackend, action]
-    if (pluginId) args.push(pluginId)
-    adoptAction.command = root.bounded(60, args)
-    adoptAction.running = true
   }
 
   implicitWidth: button.implicitWidth
@@ -149,42 +106,11 @@ Panel {
     else root.toggle()
   }
 
-  Component.onCompleted: { detectDevices(); refreshAdopt() }
+  Component.onCompleted: detectDevices()
 
   onOpenedChanged: {
-    if (opened) { detectDevices(); refreshAdopt() }
+    if (opened) detectDevices()
   }
-
-  Process {
-    id: adoptProc
-    command: root.bounded(20, ["python3", "-B", root.adoptBackend, "status"])
-    stdout: StdioCollector {
-      waitForEnd: true
-      onStreamFinished: root.receiveAdopt(String(text))
-    }
-    onExited: function(code, status) {
-      if (code !== 0 && root.adoptStatus === "") root.adoptStatus = "Could not check for other input tools."
-    }
-  }
-
-  Process {
-    id: adoptAction
-    stdout: StdioCollector {
-      waitForEnd: true
-      onStreamFinished: {
-        try {
-          var data = JSON.parse(String(text))
-          if (data.error) root.adoptStatus = data.error
-          else if (data.disabled) root.adoptStatus = "Disabled " + data.disabled + " · uninstall it with: " + data.uninstall_hint
-          else if (data.actions) root.adoptStatus = data.actions.length ? "Imported: " + data.actions.join(", ") : "Nothing left to import."
-          else root.adoptStatus = "Backed up to " + data.folder
-        } catch (error) { root.adoptStatus = "That action did not finish." }
-      }
-    }
-    onExited: function(code, status) { Qt.callLater(function() { root.refreshAdopt() }) }
-  }
-
-  readonly property string adoptBackend: decodeURIComponent(String(Qt.resolvedUrl("adopt.py")).replace(/^file:\/\//, ""))
 
   Process {
     id: detectProc
@@ -310,84 +236,6 @@ Panel {
           font.family: root.bar.fontFamily
           font.pixelSize: Style.font.title
           font.bold: true
-        }
-
-        // Another plugin or a left-over block also manages these devices. Each
-        // action backs up first; uninstalling stays the user's own step.
-        Column {
-          visible: root.adoptNeedsAttention
-          width: parent.width
-          spacing: Style.space(6)
-
-          Text {
-            width: parent.width
-            text: "Other tools for these devices"
-            color: root.bar.foreground
-            font.family: root.bar.fontFamily
-            font.pixelSize: Style.font.body
-            font.bold: true
-          }
-
-          Text {
-            width: parent.width
-            text: root.adoptSummary
-            color: Qt.alpha(root.bar.foreground, 0.7)
-            wrapMode: Text.Wrap
-            font.family: root.bar.fontFamily
-            font.pixelSize: Style.font.caption
-          }
-
-          Row {
-            width: parent.width
-            spacing: Style.space(4)
-            Button {
-              text: "Back up"
-              foreground: root.bar.foreground
-              fontFamily: root.bar.fontFamily
-              bordered: true
-              focusable: true
-              onClicked: root.runAdopt("backup")
-            }
-            Button {
-              visible: root.adoptEnabledOthers
-              text: "Back up & disable"
-              foreground: root.bar.foreground
-              fontFamily: root.bar.fontFamily
-              bordered: true
-              focusable: true
-              onClicked: root.runAdopt("disable", root.adoptOthers[0].id)
-            }
-            Button {
-              text: "Back up & import"
-              foreground: root.bar.foreground
-              fontFamily: root.bar.fontFamily
-              bordered: true
-              focusable: true
-              onClicked: root.runAdopt("import")
-            }
-          }
-
-          Text {
-            visible: root.adoptRemoveHint !== ""
-            width: parent.width
-            text: "Uninstall it yourself when you are ready: " + root.adoptRemoveHint
-            color: Qt.alpha(root.bar.foreground, 0.6)
-            wrapMode: Text.Wrap
-            font.family: root.bar.fontFamily
-            font.pixelSize: Style.font.caption
-          }
-
-          Text {
-            visible: root.adoptStatus !== ""
-            width: parent.width
-            text: root.adoptStatus
-            color: Qt.alpha(root.bar.foreground, 0.75)
-            wrapMode: Text.Wrap
-            font.family: root.bar.fontFamily
-            font.pixelSize: Style.font.caption
-          }
-
-          PanelSeparator { width: parent.width }
         }
 
         // Device tabs: only worth showing when more than one kind is attached.

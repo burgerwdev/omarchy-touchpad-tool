@@ -20,7 +20,7 @@ Not an official Omarchy project and not endorsed by the Omarchy team.
 <table>
   <tr><th>Trackpad</th><th>TrackPoint</th></tr>
   <tr>
-    <td valign="top"><img src="assets/screenshots/trackpad-tab.png" alt="Trackpad tab: device row, Pointer/Scrolling/Gestures tabs and the other-tools section" width="300"></td>
+    <td valign="top"><img src="assets/screenshots/trackpad-tab.png" alt="Trackpad tab: device row, Pointer/Scrolling/Gestures tabs and the pointer controls" width="300"></td>
     <td valign="top"><img src="assets/screenshots/trackpoint-tab.png" alt="TrackPoint tab: sensitivity slider, bar icon choice and middle-button actions" width="300"></td>
   </tr>
 </table>
@@ -68,27 +68,29 @@ Or straight from git:
 omarchy plugin add https://github.com/burgerwdev/omarchy-touchpad-tool.git --enable
 ```
 
-## Other tools for these devices
+## Migrating from another plugin
 
-If another trackpad or TrackPoint plugin is installed, or if the tools this one
-replaces left blocks behind in your Hyprland config, the panel shows an
-**Other tools for these devices** section. Each action backs up first and only
-runs when you press it:
+The panel configures devices and nothing else — it never touches another plugin.
+If you installed this widget while `omarchy-trackpad-plus` or
+`omarchy-trackpoint` is still present, that migration is an opt-in command you
+run yourself from the plugin folder. Every action backs up first, and none of
+them runs on its own:
 
-| Action | What it does |
+| Command | What it does |
 |---|---|
-| **Back up** | Copies every file this plugin owns or edits into `~/.local/state/omarchy/touchpad-tool/backups/<timestamp>/` (private, with a manifest) |
-| **Back up & disable** | Backs up, then runs `omarchy plugin disable <id>` for the other plugin |
-| **Back up & import** | Backs up, takes over the old TrackPoint sensitivity, and renames legacy gesture/middle-button blocks to this plugin |
+| `python3 adopt.py status` | Reports other trackpad/TrackPoint plugins and left-over managed blocks, changing nothing |
+| `python3 adopt.py backup` | Copies every file this plugin owns or edits into `~/.local/state/omarchy/touchpad-tool/backups/<timestamp>/` (private, with a manifest) |
+| `python3 adopt.py import` | Backs up, takes over the old TrackPoint sensitivity, and renames legacy gesture/middle-button blocks to this plugin |
+| `python3 adopt.py disable <plugin-id>` | Backs up, then runs `omarchy plugin disable <plugin-id>` |
 
-Uninstalling is deliberately left to you; the panel prints the command to run:
+Uninstalling another plugin stays your own step:
 
 ```sh
 omarchy plugin remove <plugin-id>
 ```
 
-This tool never removes another plugin on its own. Removing one is your step, so
-a misjudged click can never delete something you installed.
+The tool never calls `remove`, so a misjudged command can never delete something
+you installed.
 
 ## What it changes on your system
 
@@ -99,7 +101,7 @@ a misjudged click can never delete something you installed.
 | You configure the middle button | `~/.local/state/omarchy/trackpoint/middle.json` | Middle-button profiles and actions |
 | You press **Enable middle button actions** | `~/.config/hypr/bindings.lua` | Adds a marked block of binds between `-- BEGIN local.touchpad-tool middle button` and `-- END`, and hands the middle button back from hold-to-scroll |
 | You apply **Gestures** | `~/.config/hypr/input.lua` | Gesture rules between `-- BEGIN local.touchpad-tool gestures` and `-- END`, with the original settings kept for restore |
-| Any conflict action | `~/.local/state/omarchy/touchpad-tool/backups/` | Timestamped copies of the files above |
+| `python3 adopt.py backup` | `~/.local/state/omarchy/touchpad-tool/backups/` | Timestamped copies of the files above |
 
 Every write is checked with `hyprctl configerrors` and put back if Hyprland
 reports a problem. Pointer and scrolling settings are saved separately per

@@ -18,7 +18,7 @@ Environment: Omarchy 4.0 / Quattro shell, plugin `local.touchpad-tool` linked at
 | `python3 test_overview_control.py` | 23 passed |
 | `python3 test_overview_ipc.py` | 2 passed |
 | `python3 test_ipc.py` | all five IPC commands verified |
-| `node test-devicetabs.js` | 6 passed |
+| `node test-devicetabs.js` | 7 passed |
 | `node test-selection.js` | passed |
 | `node test-overview-model.js` | passed |
 | `qmltestrunner tst_curve.qml` | 12 passed, 0 failed |
@@ -27,7 +27,7 @@ Environment: Omarchy 4.0 / Quattro shell, plugin `local.touchpad-tool` linked at
 
 ## (b) QML lint
 
-`python3 lint-qml.py` → `qmllint passed for 14 QML sources; 82 known host
+`python3 lint-qml.py` → `qmllint passed for 14 QML sources; 62 known host
 metadata diagnostics` (dynamic bar/style properties and `QProcess::ExitStatus`
 only). No unrelated warnings.
 
@@ -64,8 +64,11 @@ enum values are refused before anything is written.
 - Retired ids survive only in `adopt.py`'s legacy-marker table (the migration
   input) and in the upstream copies under `docs/upstream/`; no code writes to
   `~/.config/hypr/input.lua` for device settings.
+- Nothing in the panel process tree touches another plugin: `Panel.qml` holds no
+  reference to `adopt.py` (`grep -n adopt Panel.qml` is empty), so the migration
+  helper only runs when the user runs it.
 - No `remove` call exists: `adopt.py` only runs `omarchy plugin disable`, and the
-  removal command is text shown to the user.
+  removal command is text the user prints and runs.
 
 ## (f) Success criteria
 
@@ -81,10 +84,12 @@ enum values are refused before anything is written.
    actions with per-app profiles and the bar-icon choice.
 4. One write path (state JSON + generated Lua), one validate/reload/rollback
    path, one code path for sensitivity/scroll/tap shared by both devices.
-5. Other plugins and legacy blocks are detected; actions are Back up, Back up &
-   disable, Back up & import — each backs up first and runs only on a press.
-   Disabling `davefano.trackpad-plus` was performed live with a backup first;
-   removal remains an instruction for the user.
+5. Another plugin's settings and legacy blocks can still be migrated, but only
+   by the user running `adopt.py` from the command line
+   (`status` / `backup` / `import` / `disable <plugin-id>`). The panel itself no
+   longer scans for, displays, disables or backs up other plugins: it shows the
+   attached devices and their settings and nothing else. Removal remains an
+   instruction the user runs.
 6. Suites, lint and QML tests pass; every control was driven and verified as in
    (d).
 
@@ -113,20 +118,24 @@ The merge also needed a shell restart to pick up plugin QML changes
 
 ## Screenshots (verified, not just captured)
 
-`assets/screenshots/trackpad-tab.png` (339×685) and
-`assets/screenshots/trackpoint-tab.png` (357×606) were captured from the running
+`assets/screenshots/trackpad-tab.png` (342×555) and
+`assets/screenshots/trackpoint-tab.png` (360×476) were captured from the running
 panel and then read back with OCR, because this session cannot view images:
 
 | Shot | OCR found |
 |---|---|
-| Trackpad | `Touchpad & TrackPoint`, `Trackpad TrackPoint`, the device name, `Other tools for these devices` / `Trackpad Plus (disabled)` / `Back up` / `Back up & import` / uninstall hint, `Pointer Scrolling Gestures`, `Pointer Speed`, `Pointer feel`, `Tap to Click` |
-| TrackPoint | `TrackPoint`, `Pointer sensitivity 0.35`, `Slower`/`Faster`, `Reset to default`, `ThinkPad | Red dot | Color logo`, `Middle button` |
+| Trackpad | `Touchpad & TrackPoint`, `Trackpad TrackPoint`, the device name, `Settings saved separately`, `Pointer Scrolling Gestures`, `Pointer Speed`, `Pointer feel`, `Tap to Click`, `Disable While Typing`, `Two-Finger Right Click` |
+| TrackPoint | `TrackPoint`, `Pointer sensitivity 0.60`, `Slower`/`Faster`, `Reset to default`, `ThinkPad | Red dot | Color logo`, `Middle button` |
 
 Both crops are diffed against a panel-closed baseline, so the images contain the
-panel card only — no terminal or desktop content. The TrackPoint shot was taken
-with device detection temporarily restricted to the TrackPoint tab so the tab
-could be shown without a synthetic click; that change was reverted and the shell
-restarted (the two-tab row is present again in the live panel).
+panel card only — no terminal or desktop content; the card edges were confirmed
+pixel by pixel against the compositor's `omarchy-keyboard-panel` surface. Neither
+shot contains an `Other tools for these devices` line, which is the visible proof
+that the conflict section is gone. The TrackPoint shot was taken with device
+detection temporarily restricted to the TrackPoint tab so the tab could be shown
+without a synthetic click; that change was reverted (`git checkout -- devices.py`,
+`devices.py` byte-identical afterwards and again reporting `tabs:
+["trackpad", "trackpoint"]`) and the shell restarted.
 
 ## Residual risk
 

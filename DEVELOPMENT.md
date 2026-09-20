@@ -20,8 +20,8 @@ The two tools now share one device-settings path, and each keeps its own UI
 inside one tab:
 
 - `Panel.qml` is the only bar widget: bar icon (wordmark, red dot or color
-  logo), the popup, keyboard routing, popup sizing, the device tab row, and the
-  conflict section. It loads one tab body at a time.
+  logo), the popup, keyboard routing, popup sizing and the device tab row. It
+  loads one tab body at a time and mentions no other plugin.
 - `TrackpadPanel.qml` / `TrackPointPanel.qml` are the tab bodies. They keep the
   layout, controls and styling of the tools they came from, and expose
   `contentWidth`, `contentHeight`, `moveCursor`, `togglePrimary` and the
@@ -39,9 +39,10 @@ inside one tab:
 - `gestures.py` still owns gesture rules in the user's `input.lua`, with its own
   backup and restore flow, and `overview-control.py` plus `overview/` remain the
   overview provider.
-- `adopt.py` detects other plugins and legacy managed blocks, backs up every
-  file this plugin owns or edits, imports legacy settings, and can disable
-  another plugin. It never removes one.
+- `adopt.py` is a command-line migration helper, not panel UI: it detects other
+  plugins and legacy managed blocks, backs up every file this plugin owns or
+  edits, imports legacy settings, and can disable another plugin. It never
+  removes one, and nothing in it runs unless the user runs it.
 
 ## Release versions
 
