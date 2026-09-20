@@ -17,6 +17,12 @@ function model(deviceTabs, touchpads, trackpoints) {
 // One device kind needs no tabs: the panel just shows that device's controls.
 function showsRow(deviceTabs) { return (deviceTabs || []).length > 1 }
 
+// The per-tab device list: the Trackpad tab must not offer the TrackPoint, and
+// vice versa. Rows without a kind are trackpads, matching trackpads.py.
+function forKind(devices, kind) {
+  return (devices || []).filter(function(device) { return (device.kind || "trackpad") === kind })
+}
+
 // Keep the visible tab across refreshes; follow the detected default when the
 // current tab's device is gone.
 function activeTab(current, deviceTabs, fallback) {
@@ -25,5 +31,5 @@ function activeTab(current, deviceTabs, fallback) {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { model: model, showsRow: showsRow, activeTab: activeTab }
+  module.exports = { model: model, showsRow: showsRow, forKind: forKind, activeTab: activeTab }
 }

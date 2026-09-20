@@ -79,6 +79,11 @@ Panel {
   readonly property var activeBody: deviceBody.item || null
   readonly property real bodyWidth: root.activeBody && root.activeBody.contentWidth
     ? root.activeBody.contentWidth : Style.space(360)
+  // The card draws its padding and border outside contentWidth, so the body
+  // width the tab asks for has to include them; otherwise the body hangs over
+  // the card edge and its scrollbar sits on the desktop.
+  readonly property real horizontalInset: panel.padding * 2
+    + Border.left(panel.borderSpec) + Border.right(panel.borderSpec)
   // A determinate body box: the tab bodies scroll inside it, so the popup never
   // depends on content-height propagation through the popup's own layout.
   readonly property real bodyHeight: root.activeDeviceTab === "trackpoint" ? Style.space(430) : Style.space(470)
@@ -269,7 +274,7 @@ Panel {
     bar: root.bar
     open: root.opened
     focusTarget: keyCatcher
-    contentWidth: panel.fittedContentWidth(root.bodyWidth)
+    contentWidth: panel.fittedContentWidth(root.bodyWidth + root.horizontalInset)
     contentHeight: panel.fittedContentHeight(column.implicitHeight, Style.space(900))
 
     PanelKeyCatcher {
@@ -433,7 +438,7 @@ Panel {
         // Device tabs host the ported Trackpad and TrackPoint controls.
         Loader {
           id: deviceBody
-          width: root.bodyWidth
+          width: parent.width
           height: root.bodyHeight
           sourceComponent: root.activeDeviceTab === "trackpoint" ? trackPointBody : trackpadBody
         }

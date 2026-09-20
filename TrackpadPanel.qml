@@ -7,6 +7,7 @@ import qs.Ui
 import qs.Commons
 import "Model.js" as Model
 import "Curve.js" as Curve
+import "DeviceTabs.js" as DeviceTabs
 
 // Trackpad controls: the body of the Trackpad tab. The merged panel owns the
 // bar icon, the popup and the keyboard handling, and drives this body through
@@ -65,7 +66,8 @@ Item {
     var data
     try { data = JSON.parse(raw) } catch (e) { settingsError = "Could not read trackpad settings"; return }
     if (data.error) { settingsError = data.error; return }
-    devices = data.devices || []
+    // This tab only owns trackpads; the TrackPoint's controls live in their own tab.
+    devices = DeviceTabs.forKind(data.devices, "trackpad")
     loadSelection()
   }
 

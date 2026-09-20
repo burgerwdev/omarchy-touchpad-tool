@@ -43,13 +43,22 @@ function testActiveTabSurvivesRefreshAndFallsBackWhenGone() {
   assert.equal(DeviceTabs.activeTab('', ['trackpoint'], 'trackpoint'), 'trackpoint');
 }
 
+function testEachTabOnlyGetsItsOwnDevices() {
+  // trackpads.py returns every kind plus 'kind' only once a device is a TrackPoint.
+  const devices = [{id: 'synaptics-tm3381-002'}, {id: 'tpps/2-elan-trackpoint', kind: 'trackpoint'}];
+  assert.deepEqual(DeviceTabs.forKind(devices, 'trackpad').map(d => d.id), ['synaptics-tm3381-002']);
+  assert.deepEqual(DeviceTabs.forKind(devices, 'trackpoint').map(d => d.id), ['tpps/2-elan-trackpoint']);
+  assert.deepEqual(DeviceTabs.forKind([], 'trackpad'), []);
+}
+
 const tests = [
   testBothDevicesShowBothNamedTabs,
   testTouchpadOnlyHasNoTrackpointTab,
   testTrackpointOnlyHasNoTrackpadTab,
   testNoDevicesMeansNoTabsAndNoRow,
   testUnknownTabKeyIsDropped,
-  testActiveTabSurvivesRefreshAndFallsBackWhenGone
+  testActiveTabSurvivesRefreshAndFallsBackWhenGone,
+  testEachTabOnlyGetsItsOwnDevices
 ];
 
 for (const test of tests) {

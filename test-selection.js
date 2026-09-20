@@ -20,7 +20,8 @@ function context() {
     editGeneration: 0, stateGeneration: 0, refreshPending: false,
     actionProc: { running: false }, stateProc: { running: false }, backend: 'trackpads.py',
     Model: require('./Model.js'),
-    Curve: require('./Curve.js'), previousFeels: {}, curveEditor: {},
+    Curve: require('./Curve.js'),
+    DeviceTabs: require('./DeviceTabs.js'), previousFeels: {}, curveEditor: {},
     keyCatcher: { forceActiveFocus() {} },
     scrollDebounce: { running: false, stop() { this.running = false; } },
     pointerDebounce: { running: false, stop() { this.running = false; } }

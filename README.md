@@ -62,10 +62,10 @@ ln -s "$PWD" ~/.config/omarchy/plugins/local.touchpad-tool   # or copy the folde
 omarchy plugin enable local.touchpad-tool
 ```
 
-Or from git, once published:
+Or straight from git:
 
 ```sh
-omarchy plugin add <git-url> --enable
+omarchy plugin add git@github.com:burgerwdev/omarchy-touchpad-tool.git --enable
 ```
 
 ## Other tools for these devices
