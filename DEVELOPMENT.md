@@ -82,8 +82,12 @@ This release identifier is separate from the backend's settings schema version.
   recovery journal version 2 records that target; recovery checks both its identity
   and expected contents. Version 1 journals remain recoverable for non-linked paths.
   Conflict scanning follows linked config directories, deduplicates directory
-  cycles, and retains each file alias's Lua/conf extension. Missing non-config
-  entries are skipped; missing Lua/conf entries and trust failures remain fatal.
+  cycles, and retains each file alias's Lua/conf extension. Only the family
+  Hyprland really reads is scanned: `hyprland.lua` when it exists (Quattro),
+  `hyprland.conf` otherwise, and both when there is no entry point to go by — so
+  a stale `gesture =` line in a leftover `.conf` no longer blocks Apply. Missing
+  non-config entries are skipped; missing scanned entries and trust failures
+  remain fatal.
   Recovery rechecks the target after reload before clearing its journal. Private
   state, backups, and journals retain their stricter no-symlink policy.
 - `overview-control.py`: bounded, session-specific launcher and controller with

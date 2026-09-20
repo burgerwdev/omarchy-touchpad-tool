@@ -673,6 +673,31 @@ hl.config({ gestures = { workspace_swipe_distance = 300, workspace_swipe_invert 
             other.write_text('# gesture = commented out\n')
             g.check_environment()
 
+    def test_stale_conf_gesture_is_ignored_when_the_lua_entry_is_live(self):
+        self.environment_patch.stop()
+        with patch.object(g, 'CONFIG', g.INPUT.parent):
+            (g.INPUT.parent / 'hyprland.lua').write_text('require("hypr.input")\n')
+            # Quattro reads hyprland.lua, so this .conf is not loaded by anything.
+            stale = g.INPUT.parent / 'input.conf'
+            stale.write_text('gesture = 3, horizontal, workspace\n')
+            g.check_environment()
+            other = g.INPUT.parent / 'bindings.lua'
+            other.write_text(BINDING + '\n')
+            with self.assertRaisesRegex(ValueError, 'another Hyprland file'):
+                g.check_environment()
+
+    def test_conf_entry_still_checks_conf_files(self):
+        self.environment_patch.stop()
+        with patch.object(g, 'CONFIG', g.INPUT.parent):
+            (g.INPUT.parent / 'hyprland.conf').write_text('source = ~/.config/hypr/bindings.conf\n')
+            stale = g.INPUT.parent / 'bindings.lua'
+            stale.write_text(BINDING + '\n')
+            g.check_environment()
+            legacy = g.INPUT.parent / 'bindings.conf'
+            legacy.write_text('gesture = 3, horizontal, workspace\n')
+            with self.assertRaisesRegex(ValueError, 'another Hyprland file'):
+                g.check_environment()
+
     def test_failed_reload_and_rollback_keep_recovery_journal(self):
         with patch.object(g.core, 'hypr', side_effect=['', RuntimeError('reload failed'), RuntimeError('rollback failed')]):
             with self.assertRaisesRegex(RuntimeError, 'recovery pending.*rollback failed'):

@@ -359,7 +359,23 @@ def config_target(path):
     return resolved
 
 
-def config_files():
+def live_suffixes():
+    """The config families Hyprland actually reads.
+
+    Hyprland uses hyprland.lua when it exists (the Quattro layout) and
+    hyprland.conf otherwise. Plain .conf files left behind by the older layout
+    are dead weight, so a stale `gesture =` line in one of them must not block
+    an edit.
+    """
+    root = config_target(CONFIG)
+    if (root / 'hyprland.lua').is_file():
+        return ('.lua',)
+    if (root / 'hyprland.conf').is_file():
+        return ('.conf',)
+    return ('.lua', '.conf')  # No entry point to go by: check both.
+
+
+def config_files(suffixes):
     """Include Stow directory links in conflict checks without following cycles."""
     root = config_target(CONFIG)
     pending, seen, count = [root], set(), 0
@@ -374,7 +390,7 @@ def config_files():
         except FileNotFoundError:
             # A vanished wallpaper or backup cannot contain active gestures.
             # Missing config entries and all trust failures still block Apply.
-            if alias == root or alias.suffix in ('.lua', '.conf'):
+            if alias == root or alias.suffix in suffixes:
                 raise
             continue
         if stat.S_ISDIR(info.st_mode):
@@ -383,14 +399,16 @@ def config_files():
             seen.add(path)
             with core.state_directory(path) as directory:
                 pending.extend(path / name for name in os.listdir(directory))
-        elif alias.suffix in ('.lua', '.conf'):
+        elif alias.suffix in suffixes:
             yield path, alias.suffix
 
 
 def check_environment():
     # Reject known conflicts from other local modules; never edit those files.
     input_target = config_target(INPUT)
-    for path, suffix in config_files():
+    # ponytail: a loaded Lua file that dofile()s a leftover .conf is not seen;
+    # follow dofile/require here if that layout ever shows up.
+    for path, suffix in config_files(live_suffixes()):
         if path == input_target:
             continue
         source = core.read_state_file(path) or ''

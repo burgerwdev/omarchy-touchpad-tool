@@ -14,7 +14,7 @@ Environment: Omarchy 4.0 / Quattro shell, plugin `local.touchpad-tool` linked at
 | `python3 test_adopt.py` | 8 passed |
 | `python3 test_devices.py` | 8 passed |
 | `python3 test_install.py` | 19 passed |
-| `python3 test_gestures.py` | 49 passed |
+| `python3 test_gestures.py` | 51 passed |
 | `python3 test_overview_control.py` | 23 passed |
 | `python3 test_overview_ipc.py` | 2 passed |
 | `python3 test_ipc.py` | all five IPC commands verified |
@@ -46,7 +46,7 @@ only). No unrelated warnings.
 | Touchpad pointer/scroll/tap | `trackpads.py state` and `set` wrote only `settings.json` + `zz-local-touchpads.lua`; `hyprctl configerrors` empty; rules carry `sensitivity = 0.35`, `scroll_factor = 0.4`, `natural_scroll = true`, `tap_to_click = true` |
 | TrackPoint sensitivity | `control.py` read `0.35`, wrote `0.25` → rule `hl.device({ name = "tpps/2-elan-trackpoint", sensitivity = 0.25 })`, read back `0.25`; restored afterwards |
 | Middle button | `middle.py enable` wrote the marked binds block (press/release and `SUPER + mouse:274`) and set `scroll_method = "no_scroll"` through the same writer; `disable` removed the block and the setting, leaving `bindings.lua` byte-identical to the pre-test copy |
-| Gestures | `gestures.py state` and `overview-status` return valid JSON; the overview companion path resolves inside the merged plugin directory. Applying live is refused here by design (`Gestures also exist in another Hyprland file; manage them there to avoid conflicts`) and `input.lua` was byte-identical afterwards, so the panel shows that state instead of writing |
+| Gestures | `gestures.py state` reports `can_edit: true` — `"No workspace swipe configured · Apply enables your choices"` — so the panel's Gestures tab is editable (it was refused before the later pass below). `overview-status` returns valid JSON and the overview companion path resolves inside the merged plugin directory; `input.lua` is written only when the user presses **Apply gestures** |
 | Bar icon | `omarchy bar set local.touchpad-tool logo dot|wordmark` updates the widget entry in `shell.json` |
 | Config validity | `hyprctl configerrors` empty after every write above; `~/.config/hypr/input.lua` byte-identical (md5 `45ffc437279d411db2540cf803d73bf9`) throughout — no device settings are written there |
 
@@ -92,6 +92,27 @@ enum values are refused before anything is written.
    instruction the user runs.
 6. Suites, lint and QML tests pass; every control was driven and verified as in
    (d).
+
+## Later pass: the conflict scan now follows the live config
+
+The Gestures tab was read-only on this machine even though `hyprland.lua`
+comments its gesture lines out. The cause was `~/.config/hypr/input.conf:39`
+(`gesture = 3, horizontal, workspace`), a leftover from the pre-Quattro `.conf`
+layout: Hyprland 0.56.2 logs `[cfg] Using lua config found at
+/home/hui/.config/hypr/hyprland.lua` and never reads that file, but the conflict
+scan walked every `.conf` under `~/.config/hypr` and treated the dead line as a
+live gesture. Reproduced in an isolated `XDG_CONFIG_HOME` copy: commenting only
+that line flipped `can_edit` from `false` to `true`.
+
+Fixed in `gestures.py`: `live_suffixes()` picks the family Hyprland reads
+(`.lua` when `hyprland.lua` exists, `.conf` when only `hyprland.conf` does, both
+when neither entry point exists) and `config_files()` only yields those. A
+leftover `.conf` is now ignored, a real conflict in a loaded file still blocks
+Apply, and the user's own config was not touched. Two tests cover it
+(`test_stale_conf_gesture_is_ignored_when_the_lua_entry_is_live`,
+`test_conf_entry_still_checks_conf_files`); `test_gestures.py` is at 51 passed.
+Residual gap, marked in the code: a loaded Lua file that `dofile()`s a leftover
+`.conf` is not detected.
 
 ## Defects found and fixed during this verification
 
@@ -145,5 +166,7 @@ without a synthetic click; that change was reverted (`git checkout -- devices.py
   by OCR for the default Pointer tab plus the shared inner-tab row; the Gestures
   tab's own controls are covered by the gesture test suite and by
   `gestures.py` live checks rather than by a screenshot.
-- Gesture apply is refused on this machine because gesture settings already live
-  in another Hyprland file; that is the pre-existing, intended behaviour.
+- Nothing was applied to the user's `input.lua` in this pass: the panel state was
+  verified through `gestures.py state` (`can_edit: true`), not by pressing Apply.
+- A loaded Lua file that `dofile()`s a leftover `.conf` is not seen by the
+  conflict scan (marked with a `ponytail:` comment in `gestures.py`).
