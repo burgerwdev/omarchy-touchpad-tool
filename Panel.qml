@@ -133,13 +133,13 @@ Panel {
 
   readonly property string deviceBackend: decodeURIComponent(String(Qt.resolvedUrl("devices.py")).replace(/^file:\/\//, ""))
 
+  // Width reference for the label rendering; the bar draws it regular, so
+  // the metrics stay regular too.
   TextMetrics {
     id: logoMetrics
     text: "ThinkPad"
     font.family: "Liberation Sans"
     font.pixelSize: Style.bar.iconFont
-    font.bold: true
-    font.italic: true
   }
 
   // ---- Bar icon ----
@@ -150,22 +150,23 @@ Panel {
     tooltipText: root.bothDevices ? "Touchpad and TrackPoint"
       : root.hasTrackPoint ? "TrackPoint"
       : "Touchpad"
-    // The wordmark and color logo are wider than the square icon slot.
+    // Omarchy 4.x normalizes iconComponent content into the square icon
+    // slot (BarIconContent scales painted bounds to Style.bar.iconSize), so
+    // wide content collapses to a sliver: the wordmark renders as a text
+    // label and the color logo as a plain child image instead. Only the
+    // square dot still goes through the icon slot.
+    labelText: root.logo === "wordmark" ? logoMetrics.text : ""
+    foreground: "#e2231a"
+    useActiveColor: false
+    // The label reserves the icon canvas beside the text, so count it too.
     fixedWidth: vertical || root.logo === "dot" ? -1
       : root.logo === "color" ? colorLogoWidth + Style.space(12)
-      : Math.ceil(logoMetrics.advanceWidth) + Style.space(12)
+      : Math.ceil(logoMetrics.advanceWidth) + Style.bar.iconCanvas + Style.space(16)
     readonly property int colorLogoHeight: Math.round(Style.bar.iconFont * 1.15)
     // thinkpad-color.svg is 768 x 274
     readonly property int colorLogoWidth: Math.ceil(colorLogoHeight * 768 / 274)
     iconComponent: Component {
       Item {
-        Text {
-          anchors.centerIn: parent
-          visible: root.logo === "wordmark"
-          text: logoMetrics.text
-          color: "#e2231a"
-          font: logoMetrics.font
-        }
         Rectangle {
           anchors.centerIn: parent
           visible: root.logo === "dot"
@@ -174,17 +175,17 @@ Panel {
           radius: width / 2
           color: "#e2231a"
         }
-        Image {
-          anchors.centerIn: parent
-          visible: root.logo === "color"
-          source: root.logo === "color" ? Qt.resolvedUrl("thinkpad-color.svg") : ""
-          width: button.colorLogoWidth
-          height: button.colorLogoHeight
-          sourceSize: Qt.size(width * 2, height * 2)
-          fillMode: Image.PreserveAspectFit
-          smooth: true
-        }
       }
+    }
+    Image {
+      anchors.centerIn: parent
+      visible: root.logo === "color"
+      source: root.logo === "color" ? Qt.resolvedUrl("thinkpad-color.svg") : ""
+      width: button.colorLogoWidth
+      height: button.colorLogoHeight
+      sourceSize: Qt.size(width * 2, height * 2)
+      fillMode: Image.PreserveAspectFit
+      smooth: true
     }
     onPressed: function(b) {
       if (b === Qt.RightButton) root.togglePrimaryDevice()
